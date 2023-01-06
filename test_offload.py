@@ -2,6 +2,8 @@
 import torch
 import torch.nn as nn
 
+from colossalai.utils.model.colo_init_context import ColoInitContext
+
 from mem_offload_optimize import memory_optimization
 
 class MyModel(nn.Module):
@@ -22,7 +24,8 @@ class MyModel(nn.Module):
         out = self.fc5(out)
         return out
 
-model = MyModel()
+with ColoInitContext(device=torch.device("cpu")):
+    model = MyModel()
 data_dict = {"x" : torch.rand((1, 512))}
 
 model = memory_optimization(model, data_dict, 1024*1024*4.0*5)
