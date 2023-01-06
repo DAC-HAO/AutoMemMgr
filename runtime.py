@@ -50,6 +50,7 @@ def runtime_offload_apply_pass(gm: torch.fx.GraphModule):
                     # substitute the origin node with offload_apply_node
                     new_kwargs[str(node)] = offload_apply_node
                     user.kwargs = new_kwargs
+    return gm
 
 
 

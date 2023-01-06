@@ -17,7 +17,7 @@ class OffloadStrategiesConstructor:
         solver_option (SolverOption): a SolverOptions object which specifies the preferences for plan searching.
     """
 
-    def __init__(self, graph: Graph, solver_option: SolverOption, amp_optimizer: FP16Optimizer):
+    def __init__(self, graph: Graph, amp_optimizer: FP16Optimizer, solver_option: SolverOption=None):
         self.graph = graph
         assert graph.owning_module is not None, 'The given graph is not associated with a owning_module'
         self.root_module = self.graph.owning_module
@@ -49,7 +49,7 @@ class OffloadStrategiesConstructor:
 
             elif node.op == "call_function":
                 label = True
-                for inp_node in node._input_nodes:
+                for inp_node in list(node._input_nodes.keys()):
                     if inp_node.op == "get_attr":
                         label = False
                         break
@@ -79,7 +79,7 @@ class OffloadStrategiesConstructor:
                     fp32_master_params.append(self.amp_optimizer._fp32_param_groups[group_idx][param_idx])
 
             elif node.op == 'call_function':
-                for inp_node in node._input_nodes:
+                for inp_node in list(node._input_nodes.keys()):
                     if inp_node.op == "get_attr":
                         attr_itr = self.root_module
                         atoms = inp_node.target.split(".")

@@ -1,5 +1,4 @@
 from typing import List
-from functools import partial
 import torch
 import torch.nn as nn
 from colossalai.tensor.param_op_hook import ColoParamOpHook
@@ -37,22 +36,22 @@ class GradOffloadHook():
     def __init__(self):
         self.grad_hook_list = []
 
-    def grad_handle(self, p, grad):
-        p.grad = p.grad.to('cpu')
+    def grad_handle(self, grad):
+        grad.data = grad.data.to("cpu")
+        return grad
 
     def register_grad_hook(self, module: torch.nn.Module):
         for p in module.parameters():
             if p.requires_grad:
-                self.grad_hook_list.append(p.register_hook(partial(self.grad_handle, p)))
+                self.grad_hook_list.append(p.register_hook(self.grad_handle))
 
     def remove_grad_hook(self):
         for hook in self.grad_hook_list:
             hook.remove()
 
-class BasicOffloadModule(nn.Module):
+class BasicOffloadModule:
 
-    def __init__(self, model):
-        super().__init__()
+    def __init__(self, model: nn.Module):
         self.model = model
         self.param_upload_hook = ParamUploadHook()
         self.grad_offload_hook = GradOffloadHook()
@@ -61,7 +60,7 @@ class BasicOffloadModule(nn.Module):
         return self.forward(*args, **kwargs)
 
     def _pre_forward(self):
-        self.grad_hook.register_grad_hook(self.module)
+        self.grad_offload_hook.register_grad_hook(self.model)
 
     def forward(self, *args, **kwargs):
         self.model.zero_grad(set_to_none=True)
@@ -75,4 +74,4 @@ class BasicOffloadModule(nn.Module):
         self._post_backward()
 
     def _post_backward(self):
-        self.grad_hook.remove_grad_hook()
+        self.grad_offload_hook.remove_grad_hook()

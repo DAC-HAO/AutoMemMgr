@@ -48,7 +48,7 @@ class Solver:
             runtime_mem = runtime_mem + node.meta['bwd_mem_tmp'] + node.meta['bwd_mem_out']
             if hasattr(node, 'strategies_vector'):
                 if node.meta['offload_param']:
-                    # prefetch
+                    # upload
                     runtime_mem += node.strategies_vector[0].param_size
                 # add weighted node gradient
                 runtime_mem += node.strategies_vector[0].param_size
@@ -70,7 +70,7 @@ class Solver:
                 if isinstance(grad_in, torch.Tensor):
                     runtime_mem -= grad_in.numel() * grad_in.element_size()
 
-            for in_node in node._input_nodes:
+            for in_node in list(node._input_nodes.keys()):
                 # # release fwd_in (fwd_out) of current node (input nodes)
                 # if calculate_fwd_out(in_node) > 0 and (not fwd_out_released[in_node]):
                 #     runtime_mem -= calculate_fwd_out(in_node)
