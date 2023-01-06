@@ -24,8 +24,8 @@ class MyModel(nn.Module):
         out = self.fc5(out)
         return out
 
-with ColoInitContext(device=torch.device("cpu")):
-    model = MyModel()
+
+model = MyModel()
 data_dict = {"x" : torch.rand((1, 512))}
 
 model = memory_optimization(model, data_dict, 1024*1024*4.0*5)
