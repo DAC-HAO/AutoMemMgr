@@ -21,8 +21,8 @@ class MyModel(nn.Module):
         return out
 
 
-model = MyModel().half()
-data_dict = {"x" : torch.rand((1, 4), dtype=torch.float16)}
+model = MyModel().cuda().half()
+data_dict = {"x" : torch.rand((1, 4), device="cuda", dtype=torch.float16)}
 
 tracer = ColoTracer()
 wrap_fn = lambda x: x.to("meta") if isinstance(x, torch.Tensor) else x
