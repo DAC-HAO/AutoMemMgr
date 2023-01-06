@@ -22,9 +22,9 @@ class MyModel(nn.Module):
         out = self.fc5(out)
         return out
 
-model = MyModel().half()
-data_dict = {"x" : torch.rand((1, 512), dtype=torch.float16)}
+model = MyModel()
+data_dict = {"x" : torch.rand((1, 512))}
 
-model = memory_optimization(model, data_dict, 1024*1024*2.0*5)
+model = memory_optimization(model, data_dict, 1024*1024*4.0*5)
 loss = torch.sum(model(**data_dict))
 loss.backward()

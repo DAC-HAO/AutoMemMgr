@@ -35,7 +35,7 @@ class OffloadParameter(torch.autograd.Function):
         for param_idx in ctx.params_indices:
             fp16_param = ModelParameters.fp16_params[param_idx]
             alloc_storage(fp16_param.data)
-            fp16_param.data.copy_(ModelParameters.fp32_master_params[param_idx].data.half())
+            fp16_param.data.copy_(ModelParameters.fp32_master_params[param_idx].data)
         return grad_output, None
 
 
@@ -57,7 +57,6 @@ def runtime_offload_apply_pass(gm: torch.fx.GraphModule):
     nodes = tuple(mod_graph.nodes)
     for node in nodes:
         if node.meta['offload_param']:
-            # offload_spec = {"offload_spec": OffloadSpec(fp16_params=node.fp16_params, fp32_master_params=node.fp32_master_params)}
             params_indices = node.params_indices
             assert isinstance(params_indices, list)
             with mod_graph.inserting_after(node):
