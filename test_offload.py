@@ -23,8 +23,8 @@ class MyModel(nn.Module):
         return out
 
 model = MyModel().half()
-data_dict = {"x" : torch.rand((1, 512), dtype=torch.float16).cuda()}
+data_dict = {"x" : torch.rand((1, 512), dtype=torch.float16)}
 
-model, optimizer = memory_optimization(model, data_dict, 1024*1024*2.0*4)
+model = memory_optimization(model, data_dict, 1024*1024*2.0*5)
 loss = torch.sum(model(**data_dict))
 loss.backward()

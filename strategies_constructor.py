@@ -17,7 +17,7 @@ class OffloadStrategiesConstructor:
         solver_option (SolverOption): a SolverOptions object which specifies the preferences for plan searching.
     """
 
-    def __init__(self, graph: Graph, amp_optimizer: FP16Optimizer, solver_option: SolverOption=None):
+    def __init__(self, graph: Graph, amp_optimizer: FP16Optimizer=None, solver_option: SolverOption=None):
         self.graph = graph
         assert graph.owning_module is not None, 'The given graph is not associated with a owning_module'
         self.root_module = self.graph.owning_module
@@ -63,9 +63,9 @@ class OffloadStrategiesConstructor:
                 for group_idx, param_group in enumerate(self.amp_optimizer._fp16_param_groups):
                     try:
                         param_idx = param_group.index(param)
-                        return group_idx, param_idx
                     except:
                         continue
+                    return group_idx, param_idx
 
             fp16_params = []
             fp32_master_params = []
@@ -73,10 +73,11 @@ class OffloadStrategiesConstructor:
             if node.op == 'call_module':
                 target = node.target
                 submod = self.root_module.get_submodule(target)
-                for p in list(submod.named_parameters(recurse=False)):
+                for p in list(submod.parameters(recurse=False)):
                     fp16_params.append(p)
-                    group_idx, param_idx = _get_fp16_param_index(p)
-                    fp32_master_params.append(self.amp_optimizer._fp32_param_groups[group_idx][param_idx])
+                    # group_idx, param_idx = _get_fp16_param_index(p)
+                    # fp32_master_params.append(self.amp_optimizer._fp32_master_param_groups[group_idx][param_idx])
+                    fp32_master_params.append(p.detach().clone().float())
 
             elif node.op == 'call_function':
                 for inp_node in list(node._input_nodes.keys()):
@@ -86,8 +87,9 @@ class OffloadStrategiesConstructor:
                         for atom in atoms:
                             attr_itr = getattr(attr_itr, atom)
                         fp16_params.append(attr_itr)
-                        group_idx, param_idx = _get_fp16_param_index(attr_itr)
-                        fp32_master_params.append(self.amp_optimizer._fp32_param_groups[group_idx][param_idx])
+                        # group_idx, param_idx = _get_fp16_param_index(attr_itr)
+                        # fp32_master_params.append(self.amp_optimizer._fp32_master_param_groups[group_idx][param_idx])
+                        fp32_master_params.append(attr_itr.detach().clone().float())
             setattr(node, 'fp16_params', fp16_params)
             setattr(node, 'fp32_master_params', fp32_master_params)
 
@@ -97,7 +99,7 @@ class OffloadStrategiesConstructor:
 
             if _check_no_strategy_for_node(node):
                 self.no_strategy_nodes.append(node)
-                pass
+                continue
 
             _set_master_params_attr_for_node(node)
             generator = StrategyGenerator(node, self.graph)

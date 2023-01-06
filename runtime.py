@@ -1,6 +1,13 @@
+from dataclasses import dataclass
 import torch
 from torch.fx.node import Node
 from colossalai.gemini.tensor_utils import alloc_storage, free_storage
+
+@dataclass
+class OffloadSpec:
+    fp16_params: []
+    fp32_master_params: []
+
 
 class OffloadParameter(torch.autograd.Function):
     """
@@ -13,30 +20,43 @@ class OffloadParameter(torch.autograd.Function):
     """
 
     @staticmethod
-    def forward(ctx, input_, offload_node):
+    def forward(ctx, input_, offload_spec):
         # offload
-        ctx.offload_node = offload_node
-        for p in offload_node.fp16_params:
+        ctx.offload_spec = offload_spec
+        for p in offload_spec.fp16_params:
             free_storage(p.data)
         return input_
 
     @staticmethod
     def backward(ctx, grad_output):
         # prefetch
-        for idx, p in enumerate(ctx.offload_node.fp16_params):
+        for idx, p in enumerate(ctx.offload_spec.fp16_params):
             alloc_storage(p.data)
-            p.data.copy_(ctx.offload_node.fp32_master_params[idx].data.half())
+            p.data.copy_(ctx.offload_spec.fp32_master_params[idx].data.half())
         return grad_output, None
+
+
+def covert_spec_to_action(tensor, offload_spec):
+    '''
+    Convert OffloadSpec into runtime action, implement offload operation target tensor.
+
+    Argument:
+        tensor(torch.Tensor): Tensor stored in each device, which could be different in different ranks.
+    '''
+    return OffloadParameter.apply(tensor, offload_spec["offload_spec"])
+
 
 def runtime_offload_apply_pass(gm: torch.fx.GraphModule):
     """
     This pass is used to add the offload spec apply node to the origin graph.
     """
     mod_graph = gm.graph
-    for node in mod_graph.nodes:
+    nodes = tuple(mod_graph.nodes)
+    for node in nodes:
         if node.meta['offload_param']:
+            offload_spec = {"offload_spec": OffloadSpec(fp16_params=node.fp16_params, fp32_master_params=node.fp32_master_params)}
             with mod_graph.inserting_after(node):
-                offload_apply_node = mod_graph.create_node('call_function', OffloadParameter(), args=(node,))
+                offload_apply_node = mod_graph.create_node('call_function', covert_spec_to_action, args=(node, offload_spec))
             user_list = list(node.users.keys())
             for user in user_list:
                 new_args = list(user.args)

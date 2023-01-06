@@ -32,7 +32,8 @@ class Solver:
         for node in self.graph.nodes:
             runtime_mem = runtime_mem + calculate_fwd_tmp(node) + calculate_fwd_out(node)
             # prefetch parameter
-            runtime_mem += node.strategies_vector[0].param_size
+            if hasattr(node, 'strategies_vector'):
+                runtime_mem += node.strategies_vector[0].param_size
 
             if node.meta.get('runtime_fwd_mem', 0) != 0:
                 total_mem_saving += (node.meta.get('runtime_fwd_mem') - runtime_mem)
@@ -91,9 +92,9 @@ class Solver:
             max_profit = 0
             reduced_peak_mem = peak_mem
             for node in self.nodes:
-                if not node.meta['offload_param']:
-                    tmp_peak_mem, tmp_total_mem_saving = self._compute_mem_saving()
+                if (not node.meta['offload_param']) and (hasattr(node, 'strategies_vector')):
                     node.meta['offload_param'] = True
+                    tmp_peak_mem, tmp_total_mem_saving = self._compute_mem_saving()
                     profit = (peak_mem - tmp_peak_mem) / node.strategies_vector[0].comm_cost
                     if profit > max_profit:
                         offload_node = node
