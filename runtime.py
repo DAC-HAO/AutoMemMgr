@@ -3,6 +3,8 @@ import torch
 from torch.fx.node import Node
 from colossalai.gemini.tensor_utils import alloc_storage, free_storage
 
+from util import ModelParameters
+
 @dataclass
 class OffloadSpec:
     fp16_params: []
@@ -20,30 +22,31 @@ class OffloadParameter(torch.autograd.Function):
     """
 
     @staticmethod
-    def forward(ctx, input_, offload_spec):
+    def forward(ctx, input_, params_indices):
         # offload
-        ctx.offload_spec = offload_spec
-        for p in offload_spec.fp16_params:
-            free_storage(p.data)
+        ctx.params_indices = params_indices
+        for param_idx in params_indices:
+            free_storage(ModelParameters.fp16_params[param_idx].data)
         return input_
 
     @staticmethod
     def backward(ctx, grad_output):
         # prefetch
-        for idx, p in enumerate(ctx.offload_spec.fp16_params):
-            alloc_storage(p.data)
-            p.data.copy_(ctx.offload_spec.fp32_master_params[idx].data.half())
+        for param_idx in ctx.params_indices:
+            fp16_param = ModelParameters.fp16_params[param_idx]
+            alloc_storage(fp16_param.data)
+            fp16_param.data.copy_(ModelParameters.fp32_master_params[param_idx].data.half())
         return grad_output, None
 
 
-def covert_spec_to_action(tensor, offload_spec):
+def covert_spec_to_action(tensor, params_indices):
     '''
     Convert OffloadSpec into runtime action, implement offload operation target tensor.
 
     Argument:
         tensor(torch.Tensor): Tensor stored in each device, which could be different in different ranks.
     '''
-    return OffloadParameter.apply(tensor, offload_spec["offload_spec"])
+    return OffloadParameter.apply(tensor, params_indices)
 
 
 def runtime_offload_apply_pass(gm: torch.fx.GraphModule):
@@ -54,9 +57,11 @@ def runtime_offload_apply_pass(gm: torch.fx.GraphModule):
     nodes = tuple(mod_graph.nodes)
     for node in nodes:
         if node.meta['offload_param']:
-            offload_spec = {"offload_spec": OffloadSpec(fp16_params=node.fp16_params, fp32_master_params=node.fp32_master_params)}
+            # offload_spec = {"offload_spec": OffloadSpec(fp16_params=node.fp16_params, fp32_master_params=node.fp32_master_params)}
+            params_indices = node.params_indices
+            assert isinstance(params_indices, list)
             with mod_graph.inserting_after(node):
-                offload_apply_node = mod_graph.create_node('call_function', covert_spec_to_action, args=(node, offload_spec))
+                offload_apply_node = mod_graph.create_node('call_function', covert_spec_to_action, args=(node, params_indices))
             user_list = list(node.users.keys())
             for user in user_list:
                 new_args = list(user.args)

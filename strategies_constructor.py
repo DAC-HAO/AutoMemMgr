@@ -7,6 +7,7 @@ from colossalai.amp.naive_amp import FP16Optimizer
 from offload_strategy import OffloadStrategiesVector
 from strategy_generator import StrategyGenerator
 from options import SolverOption
+from util import ModelParameters
 
 class OffloadStrategiesConstructor:
     """
@@ -67,17 +68,24 @@ class OffloadStrategiesConstructor:
                         continue
                     return group_idx, param_idx
 
-            fp16_params = []
-            fp32_master_params = []
+            # fp16_params = []
+            # fp32_master_params = []
+
+            params_indices = []
 
             if node.op == 'call_module':
                 target = node.target
                 submod = self.root_module.get_submodule(target)
                 for p in list(submod.parameters(recurse=False)):
-                    fp16_params.append(p)
+                    # fp16_params.append(p)
                     # group_idx, param_idx = _get_fp16_param_index(p)
                     # fp32_master_params.append(self.amp_optimizer._fp32_master_param_groups[group_idx][param_idx])
-                    fp32_master_params.append(p.detach().clone().float())
+                    # fp32_master_params.append(p.detach().clone().float())
+
+                    params_indices.append(ModelParameters.param_idx)
+                    ModelParameters.fp16_params.append(p)
+                    ModelParameters.fp32_master_params.append(p.detach().clone().float())
+                    ModelParameters.param_idx += 1
 
             elif node.op == 'call_function':
                 for inp_node in list(node._input_nodes.keys()):
@@ -86,12 +94,18 @@ class OffloadStrategiesConstructor:
                         atoms = inp_node.target.split(".")
                         for atom in atoms:
                             attr_itr = getattr(attr_itr, atom)
-                        fp16_params.append(attr_itr)
+                        # fp16_params.append(attr_itr)
                         # group_idx, param_idx = _get_fp16_param_index(attr_itr)
                         # fp32_master_params.append(self.amp_optimizer._fp32_master_param_groups[group_idx][param_idx])
-                        fp32_master_params.append(attr_itr.detach().clone().float())
-            setattr(node, 'fp16_params', fp16_params)
-            setattr(node, 'fp32_master_params', fp32_master_params)
+                        # fp32_master_params.append(attr_itr.detach().clone().float())
+
+                        params_indices.append(ModelParameters.param_idx)
+                        ModelParameters.fp16_params.append(attr_itr)
+                        ModelParameters.fp32_master_params.append(attr_itr.detach().clone().float())
+                        ModelParameters.param_idx += 1
+            # setattr(node, 'fp16_params', fp16_params)
+            # setattr(node, 'fp32_master_params', fp32_master_params)
+            setattr(node, 'params_indices', params_indices)
 
         for node in self.nodes:
             node.meta["offload_param"] = False
