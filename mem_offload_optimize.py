@@ -20,7 +20,7 @@ from basic_offload_module import BasicOffloadModule
 if is_compatible_with_meta():
     from colossalai.fx.profiler import MetaTensor
 
-def memory_optimization(model: torch.nn.Module, inps: Dict[str, torch.Tensor]):
+def memory_optimization(model: torch.nn.Module, inps: Dict[str, torch.Tensor], memory_budget: float=-1.0):
     model.cpu()
     tracer = ColoTracer()
     wrap_fn = lambda x: MetaTensor(x, fake_device=torch.device("cpu")) if isinstance(x, torch.Tensor) else x
@@ -36,7 +36,7 @@ def memory_optimization(model: torch.nn.Module, inps: Dict[str, torch.Tensor]):
     offload_strategies_constructor = OffloadStrategiesConstructor(graph, optimizer)
     offload_strategies_constructor.build_strategies_and_cost()
 
-    solver = Solver(gm.graph, offload_strategies_constructor)
+    solver = Solver(gm.graph, offload_strategies_constructor, memory_budget)
     solver._call_solver_greedy_v1()
 
     gm = runtime_offload_apply_pass(gm)
