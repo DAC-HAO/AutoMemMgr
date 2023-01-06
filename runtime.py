@@ -63,6 +63,8 @@ def runtime_offload_apply_pass(gm: torch.fx.GraphModule):
                 offload_apply_node = mod_graph.create_node('call_function', covert_spec_to_action, args=(node, params_indices))
             user_list = list(node.users.keys())
             for user in user_list:
+                if user == offload_apply_node:
+                    continue
                 new_args = list(user.args)
                 new_kwargs = dict(user.kwargs)
                 # the origin node may be a positional argument or key word argument of user node
