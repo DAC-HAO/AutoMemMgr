@@ -25,7 +25,7 @@ class StrategyGenerator:
 
         param_size = self.compute_param_size(self.node)
         comm_cost = param_size / SystemConfig.BANDWIDTH
-        strategies.append(OffloadStrategy(offload_flag=True, memory_saving=param_size, comm_cost=comm_cost))
+        strategies.append(OffloadStrategy(offload_flag=True, param_size=param_size, comm_cost=comm_cost))
 
         return strategies
 

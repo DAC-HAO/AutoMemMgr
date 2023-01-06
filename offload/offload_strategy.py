@@ -19,7 +19,7 @@ class OffloadStrategiesVector(StrategiesVector):
 @dataclass
 class OffloadStrategy:
     offload_flag: bool = False
-    memory_saving: float = 0
+    param_size: float = 0
     comm_cost: float = 0
     reuse_interval: float = 0
 
