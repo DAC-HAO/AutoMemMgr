@@ -31,7 +31,7 @@ wrap_fn = lambda x: x.to("meta") if isinstance(x, torch.Tensor) else x
 meta_args = tree_map(wrap_fn, data_dict)
 graph = tracer.trace(model, meta_args=meta_args)
 gm = GraphModule(model, graph, model.__class__.__name__)
-gm.recompile()
+# gm.recompile()
 
 interp = MetaInfoProp(gm)
 interp.propagate(meta_args["x"])
