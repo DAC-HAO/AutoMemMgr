@@ -73,6 +73,7 @@ class OffloadStrategiesConstructor:
 
             assert hasattr(node, "node_info") and isinstance(node.node_info, NodeInfo)
             node_info = node.node_info
+            node_info.has_param = True
             if node_info.param_indices is None:
                 node_info.param_indices = []
 
