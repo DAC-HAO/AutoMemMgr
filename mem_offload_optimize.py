@@ -41,7 +41,8 @@ def memory_optimization(model: torch.nn.Module, inps: Dict[str, torch.Tensor], m
     offload_strategies_constructor.build_strategies_and_cost()
 
     solver = Solver(gm.graph, offload_strategies_constructor, memory_budget)
-    solver._call_solver_greedy_v1()
+    # solver._call_solver_greedy_v1()
+    solver._call_solver_l2l()
 
     gm = runtime_offload_apply_pass(gm)
     gm.recompile()

@@ -99,3 +99,6 @@ class Solver:
             offload_node.node_info.offload_param_flag = True
             peak_mem = reduced_peak_mem
 
+    def _call_solver_l2l(self):
+        for node in self.nodes:
+            node.node_info.offload_param_flag = True

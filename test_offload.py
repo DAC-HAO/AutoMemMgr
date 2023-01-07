@@ -1,4 +1,4 @@
-
+import time
 import torch
 import torch.nn as nn
 from torch.utils._pytree import tree_map
@@ -31,5 +31,11 @@ data_dict = {"x" : torch.rand((1, 512))}
 
 model = memory_optimization(model, data_dict, 1024*1024*4.0*5)
 wrap_fn = lambda x: x.to("cuda") if isinstance(x, torch.Tensor) else x
+
+torch.cuda.synchronize()
+torch.cuda.reset_peak_memory_stats()
+start_time = time.time()
 loss = torch.sum(model(**tree_map(wrap_fn, data_dict)))
 loss.backward()
+torch.cuda.synchronize()
+print(time.time() - start_time, torch.cuda.max_memory_allocated()/1024**2, "MB")
