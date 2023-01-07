@@ -59,7 +59,7 @@ class StrategyGenerator:
         for following_node in self.nodes[self.node_idx:]:
             reuse_interval += following_node.meta.get('fwd_flop', 0) / SystemConfig.COMPUTE_POWER
             reuse_interval += following_node.meta.get('bwd_flop', 0) / SystemConfig.COMPUTE_POWER
-            if following_node.node_info.offload_param_flag:
+            if hasattr(following_node, 'node_info') and following_node.node_info.offload_param_flag:
                 # TODO will extrate it from node.strategy
                 # reuse_interval += self.compute_param_size(following_node) / SystemConfig.BANDWIDTH
                 reuse_interval += following_node.node_info.param_size / SystemConfig.BANDWIDTH
