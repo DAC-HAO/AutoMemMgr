@@ -29,7 +29,7 @@ class MyModel(nn.Module):
 model = MyModel()
 data_dict = {"x" : torch.rand((1, 512))}
 
-model = memory_optimization(model, data_dict, 1024*1024*4.0*5)
+model = memory_optimization(model, data_dict, 1024*1024*4.0*8)
 wrap_fn = lambda x: x.to("cuda") if isinstance(x, torch.Tensor) else x
 
 torch.cuda.synchronize()
