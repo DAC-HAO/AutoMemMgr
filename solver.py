@@ -51,7 +51,7 @@ class Solver:
                     runtime_mem += node.node_info.param_size
                 # add weighted node gradient
                 runtime_mem += node.node_info.param_size
-
+                print(runtime_mem)
                 total_mem_saving += min(node.node_info.runtime_bwd_mem - runtime_mem, 0)
                 node.node_info.runtime_bwd_mem = runtime_mem
 
@@ -78,7 +78,7 @@ class Solver:
                 if grad_in_computed.get(in_node, False):
                     runtime_mem -= calculate_fwd_out(in_node)
                     grad_in_computed[in_node] = True
-        print(runtime_mem)
+
         return peak_mem, total_mem_saving
 
     def _call_solver_greedy_v1(self):
