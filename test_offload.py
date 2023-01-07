@@ -1,6 +1,7 @@
 
 import torch
 import torch.nn as nn
+from torch.utils._pytree import tree_map
 
 from colossalai.utils.model.colo_init_context import ColoInitContext
 
@@ -29,5 +30,6 @@ model = MyModel()
 data_dict = {"x" : torch.rand((1, 512))}
 
 model = memory_optimization(model, data_dict, 1024*1024*4.0*5)
-loss = torch.sum(model(**data_dict))
+wrap_fn = lambda x: x.to("cuda") if isinstance(x, torch.Tensor) else x
+loss = torch.sum(model(**tree_map(wrap_fn, data_dict)))
 loss.backward()
