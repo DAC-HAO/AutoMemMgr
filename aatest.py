@@ -7,8 +7,6 @@ from colossalai.utils.model.colo_init_context import ColoInitContext
 from colossalai.fx import ColoTracer
 from colossalai.fx.passes.meta_info_prop import MetaInfoProp
 
-from mem_offload_optimize import memory_optimization
-
 
 class MyModel(nn.Module):
     def __init__(self):
@@ -31,9 +29,8 @@ wrap_fn = lambda x: x.to("meta") if isinstance(x, torch.Tensor) else x
 meta_args = tree_map(wrap_fn, data_dict)
 graph = tracer.trace(model, meta_args=meta_args)
 gm = GraphModule(model, graph, model.__class__.__name__)
-# gm.recompile()
+gm.recompile()
 
 interp = MetaInfoProp(gm)
-interp.propagate(meta_args["x"])
-# loss = torch.sum(gm(**data_dict))
-# loss.backward()
+interp.propagate(*meta_args.values())
+

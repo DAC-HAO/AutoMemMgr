@@ -73,7 +73,7 @@ class StrategyGenerator:
         strategies = self.collate_strategies()
 
         # update the costs
-        for strategy in strategies:
-            self.update_reuse_interval(strategy)
+        # for strategy in strategies:
+        #     self.update_reuse_interval(strategy)
         return strategies
 
