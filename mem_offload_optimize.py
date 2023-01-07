@@ -30,8 +30,8 @@ def memory_optimization(model: torch.nn.Module, inps: Dict[str, torch.Tensor], m
     graph = tracer.trace(model, meta_args=meta_args)
     gm = GraphModule(model, graph, model.__class__.__name__)
 
-    # interp = MetaInfoProp(gm)
-    # interp.propagate(*meta_args.values())
+    interp = MetaInfoProp(gm)
+    interp.propagate(*meta_args.values())
 
     # optimizer = optim.Adam(model.parameters(), lr=1e-3, betas=(0.9, 0.98), eps=1e-09)
     # optimizer = FP16Optimizer(optimizer, DynamicGradScaler())

@@ -7,7 +7,7 @@ from colossalai.amp.naive_amp import FP16Optimizer
 from offload_strategy import OffloadStrategiesVector
 from strategy_generator import StrategyGenerator
 from options import SolverOption
-from util import ModelParameters
+from util import ModelParameters, NodeInfo
 
 class OffloadStrategiesConstructor:
     """
@@ -57,7 +57,7 @@ class OffloadStrategiesConstructor:
 
             return label
 
-        def _set_master_params_attr_for_node(node: Node):
+        def _set_params_info_for_node(node: Node):
             assert node.op in ['call_function', 'call_module']
 
             def _get_fp16_param_index(param):
@@ -71,7 +71,10 @@ class OffloadStrategiesConstructor:
             # fp16_params = []
             # fp32_master_params = []
 
-            params_indices = []
+            assert hasattr(node, "node_info") and isinstance(node.node_info, NodeInfo)
+            node_info = node.node_info
+            if node_info.param_indices is None:
+                node_info.param_indices = []
 
             if node.op == 'call_module':
                 target = node.target
@@ -82,7 +85,8 @@ class OffloadStrategiesConstructor:
                     # fp32_master_params.append(self.amp_optimizer._fp32_master_param_groups[group_idx][param_idx])
                     # fp32_master_params.append(p.detach().clone().float())
 
-                    params_indices.append(ModelParameters.param_idx)
+                    node_info.param_indices.append(ModelParameters.param_idx)
+                    node_info.param_size += p.data.numel() * p.data.element_size()
                     ModelParameters.fp16_params.append(p)
                     ModelParameters.fp32_master_params.append(p.detach().clone().float())
                     ModelParameters.param_idx += 1
@@ -99,23 +103,23 @@ class OffloadStrategiesConstructor:
                         # fp32_master_params.append(self.amp_optimizer._fp32_master_param_groups[group_idx][param_idx])
                         # fp32_master_params.append(attr_itr.detach().clone().float())
 
-                        params_indices.append(ModelParameters.param_idx)
+                        node_info.param_indices.append(ModelParameters.param_idx)
+                        node_info.param_size += attr_itr.data.numel() * attr_itr.data.element_size()
                         ModelParameters.fp16_params.append(attr_itr)
                         ModelParameters.fp32_master_params.append(attr_itr.detach().clone().float())
                         ModelParameters.param_idx += 1
             # setattr(node, 'fp16_params', fp16_params)
             # setattr(node, 'fp32_master_params', fp32_master_params)
-            setattr(node, 'params_indices', params_indices)
 
         for node in self.nodes:
-            node.meta["offload_param"] = False
+            setattr(node, "node_info", NodeInfo())
             strategies_vector = OffloadStrategiesVector(node)
 
             if _check_no_strategy_for_node(node):
                 self.no_strategy_nodes.append(node)
                 continue
 
-            _set_master_params_attr_for_node(node)
+            _set_params_info_for_node(node)
             generator = StrategyGenerator(node, self.graph)
             strategies_vector.extend(generator.generate())
             setattr(node, 'strategies_vector', strategies_vector)

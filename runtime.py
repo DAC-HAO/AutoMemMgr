@@ -5,11 +5,6 @@ from colossalai.gemini.tensor_utils import alloc_storage, free_storage
 
 from util import ModelParameters
 
-@dataclass
-class OffloadSpec:
-    fp16_params: []
-    fp32_master_params: []
-
 
 class OffloadParameter(torch.autograd.Function):
     """
@@ -56,11 +51,11 @@ def runtime_offload_apply_pass(gm: torch.fx.GraphModule):
     mod_graph = gm.graph
     nodes = tuple(mod_graph.nodes)
     for node in nodes:
-        if node.meta['offload_param']:
-            params_indices = node.params_indices
-            assert isinstance(params_indices, list)
+        if node.node_info.offload_param_flag:
+            param_indices = node.node_info.param_indices
+            assert isinstance(param_indices, list)
             with mod_graph.inserting_after(node):
-                offload_apply_node = mod_graph.create_node('call_function', covert_spec_to_action, args=(node, params_indices))
+                offload_apply_node = mod_graph.create_node('call_function', covert_spec_to_action, args=(node, param_indices))
             user_list = list(node.users.keys())
             for user in user_list:
                 if user == offload_apply_node:

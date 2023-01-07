@@ -23,9 +23,11 @@ class StrategyGenerator:
         strategies = []
         # strategies.append(OffloadStrategy(False))
 
-        param_size = self.compute_param_size(self.node)
-        comm_cost = param_size / SystemConfig.BANDWIDTH
-        strategies.append(OffloadStrategy(offload_flag=True, param_size=param_size, comm_cost=comm_cost))
+        # param_size = self.compute_param_size(self.node)
+        # comm_cost = param_size / SystemConfig.BANDWIDTH
+
+        comm_cost = self.node.node_info.param_size / SystemConfig.BANDWIDTH
+        strategies.append(OffloadStrategy(offload_flag=True, comm_cost=comm_cost))
 
         return strategies
 
@@ -33,7 +35,7 @@ class StrategyGenerator:
         assert node.op in ['call_function', 'call_module']
         param_size = 0
         if node.op == 'call_function':
-            for inp_node in node._input_nodes:
+            for inp_node in list(node._input_nodes.keys()):
                 if inp_node.op == "get_attr":
                     attr_itr = self.graph.owning_module
                     atoms = inp_node.target.split(".")
@@ -54,12 +56,14 @@ class StrategyGenerator:
 
     def update_reuse_interval(self, strategy: OffloadStrategy):
         reuse_interval = 0
-        for successor_node in self.nodes[self.node_idx:]:
-            reuse_interval += successor_node.meta.get('fwd_flop', 0) / SystemConfig.COMPUTE_POWER
-            reuse_interval += successor_node.meta.get('bwd_flop', 0) / SystemConfig.COMPUTE_POWER
-            if successor_node.meta.get('offload_param', False):
+        for following_node in self.nodes[self.node_idx:]:
+            reuse_interval += following_node.meta.get('fwd_flop', 0) / SystemConfig.COMPUTE_POWER
+            reuse_interval += following_node.meta.get('bwd_flop', 0) / SystemConfig.COMPUTE_POWER
+            if following_node.node_info.offload_param_flag:
                 # TODO will extrate it from node.strategy
-                reuse_interval += self.compute_param_size(successor_node) / SystemConfig.BANDWIDTH
+                # reuse_interval += self.compute_param_size(following_node) / SystemConfig.BANDWIDTH
+                reuse_interval += following_node.node_info.param_size / SystemConfig.BANDWIDTH
+
         strategy.reuse_interval = reuse_interval
 
     def update_strategies(self, strategies: List[OffloadStrategy]):
@@ -73,7 +77,7 @@ class StrategyGenerator:
         strategies = self.collate_strategies()
 
         # update the costs
-        # for strategy in strategies:
-        #     self.update_reuse_interval(strategy)
+        for strategy in strategies:
+            self.update_reuse_interval(strategy)
         return strategies
 

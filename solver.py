@@ -32,36 +32,33 @@ class Solver:
         for node in self.graph.nodes:
             runtime_mem = runtime_mem + calculate_fwd_tmp(node) + calculate_fwd_out(node)
             # prefetch parameter
-            if hasattr(node, 'strategies_vector'):
-                runtime_mem += node.strategies_vector[0].param_size
+            runtime_mem += node.node_info.param_size
 
-            if node.meta.get('runtime_fwd_mem', 0) != 0:
-                total_mem_saving += (node.meta.get('runtime_fwd_mem') - runtime_mem)
-            node.meta['runtime_fwd_mem'] = runtime_mem
+            total_mem_saving += min(node.node_info.runtime_fwd_mem - runtime_mem, 0)
+            node.node_info.runtime_fwd_mem = runtime_mem
 
             peak_mem = max(runtime_mem, peak_mem)
-            if node.meta['offload_param']:
-                runtime_mem -= node.strategies_vector[0].param_size
+            if node.node_info.offload_param_flag:
+                runtime_mem -= node.node_info.param_size
 
         grad_in_computed = {}
         for node in self.graph.nodes.__reversed__():
             runtime_mem -= calculate_fwd_out(node)
             runtime_mem = runtime_mem + node.meta['bwd_mem_tmp'] + node.meta['bwd_mem_out']
-            if hasattr(node, 'strategies_vector'):
-                if node.meta['offload_param']:
+            if node.node_info.has_param:
+                if node.node_info.offload_param_flag:
                     # upload
-                    runtime_mem += node.strategies_vector[0].param_size
+                    runtime_mem += node.node_info.param_size
                 # add weighted node gradient
-                runtime_mem += node.strategies_vector[0].param_size
+                runtime_mem += node.node_info.param_size
 
-                if node.meta.get('runtime_bwd_mem', 0) != 0:
-                    total_mem_saving += (node.meta.get('runtime_fwd_mem') - runtime_mem)
-                node.meta['runtime_bwd_mem'] = runtime_mem
+                total_mem_saving += min(node.node_info.runtime_bwd_mem - runtime_mem, 0)
+                node.node_info.runtime_bwd_mem = runtime_mem
 
                 peak_mem = max(runtime_mem, peak_mem)
 
                 # release parameter and offload gradient
-                runtime_mem -= 2 * node.strategies_vector[0].param_size
+                runtime_mem -= 2 * node.node_info.param_size
             peak_mem = max(runtime_mem, peak_mem)
             runtime_mem = runtime_mem - node.meta['bwd_mem_tmp'] - calculate_fwd_tmp(node)
 
@@ -92,15 +89,15 @@ class Solver:
             max_profit = 0
             reduced_peak_mem = peak_mem
             for node in self.nodes:
-                if (not node.meta['offload_param']) and (hasattr(node, 'strategies_vector')):
-                    node.meta['offload_param'] = True
+                if (not node.node_info.offload_param_flag) and node.node_info.has_param:
+                    node.node_info.offload_param_flag = True
                     tmp_peak_mem, tmp_total_mem_saving = self._compute_mem_saving()
                     profit = (peak_mem - tmp_peak_mem) / node.strategies_vector[0].comm_cost
                     if profit > max_profit:
                         offload_node = node
                         max_profit = profit
                         reduced_peak_mem = tmp_peak_mem
-                    node.meta['offload_param'] = False
-            offload_node.meta['offload_param'] = True
+                    node.node_info.offload_param_flag = False
+            offload_node.node_info.offload_param_flag = True
             peak_mem = reduced_peak_mem
 
