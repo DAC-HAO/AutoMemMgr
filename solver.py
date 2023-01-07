@@ -33,7 +33,7 @@ class Solver:
             runtime_mem = runtime_mem + calculate_fwd_tmp(node) + calculate_fwd_out(node)
             # prefetch parameter
             runtime_mem += node.node_info.param_size
-            print(runtime_mem)
+            print(node.node_info.runtime_fwd_mem, runtime_mem)
             total_mem_saving += min(node.node_info.runtime_fwd_mem - runtime_mem, 0)
             node.node_info.runtime_fwd_mem = runtime_mem
 
@@ -51,7 +51,7 @@ class Solver:
                     runtime_mem += node.node_info.param_size
                 # add weighted node gradient
                 runtime_mem += node.node_info.param_size
-                print(runtime_mem)
+                print(node.node_info.runtime_fwd_mem, runtime_mem)
                 total_mem_saving += min(node.node_info.runtime_bwd_mem - runtime_mem, 0)
                 node.node_info.runtime_bwd_mem = runtime_mem
 
@@ -83,6 +83,7 @@ class Solver:
 
     def _call_solver_greedy_v1(self):
         peak_mem, total_mem_saving = self._compute_mem_saving()
+        print(total_mem_saving)
         assert total_mem_saving == 0
         while peak_mem > self.memory_budget:
             offload_node = None

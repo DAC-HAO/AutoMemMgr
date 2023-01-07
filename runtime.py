@@ -51,6 +51,8 @@ def runtime_offload_apply_pass(gm: torch.fx.GraphModule):
     mod_graph = gm.graph
     nodes = tuple(mod_graph.nodes)
     for node in nodes:
+        if node.node_info.has_param:
+            pass
         if node.node_info.offload_param_flag:
             param_indices = node.node_info.param_indices
             assert isinstance(param_indices, list)
