@@ -33,7 +33,7 @@ class Solver:
             runtime_mem = runtime_mem + calculate_fwd_tmp(node) + calculate_fwd_out(node)
             # prefetch parameter
             runtime_mem += node.node_info.param_size
-
+            print(runtime_mem)
             total_mem_saving += min(node.node_info.runtime_fwd_mem - runtime_mem, 0)
             node.node_info.runtime_fwd_mem = runtime_mem
 
