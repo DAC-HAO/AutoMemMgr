@@ -34,7 +34,7 @@ class Solver:
             # prefetch parameter
             runtime_mem += node.node_info.param_size
             print(node.node_info.runtime_fwd_mem, runtime_mem)
-            total_mem_saving += min(node.node_info.runtime_fwd_mem - runtime_mem, 0)
+            total_mem_saving += max(node.node_info.runtime_fwd_mem - runtime_mem, 0)
             node.node_info.runtime_fwd_mem = runtime_mem
 
             peak_mem = max(runtime_mem, peak_mem)
@@ -52,7 +52,7 @@ class Solver:
                 # add weighted node gradient
                 runtime_mem += node.node_info.param_size
                 print(node.node_info.runtime_fwd_mem, runtime_mem)
-                total_mem_saving += min(node.node_info.runtime_bwd_mem - runtime_mem, 0)
+                total_mem_saving += max(node.node_info.runtime_bwd_mem - runtime_mem, 0)
                 node.node_info.runtime_bwd_mem = runtime_mem
 
                 peak_mem = max(runtime_mem, peak_mem)
