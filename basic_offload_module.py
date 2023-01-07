@@ -145,7 +145,7 @@ class BasicOffloadModule:
 
     def __init__(self, model: nn.Module):
         self.model = model
-        self.param_upload_hook = ParamUploadHook()
+        # self.param_upload_hook = ParamUploadHook()
         self.grad_offload_hook = GradOffloadHook()
 
     def __call__(self, *args, **kwargs):
@@ -157,8 +157,8 @@ class BasicOffloadModule:
     def forward(self, *args, **kwargs):
         self.model.zero_grad(set_to_none=True)
         self._pre_forward()
-        with ColoParamOpHookManager.use_hooks(self.param_upload_hook):
-            outputs = self.model(*args, **kwargs)
+        # with ColoParamOpHookManager.use_hooks(self.param_upload_hook):
+        outputs = self.model(*args, **kwargs)
         return outputs
 
     def backward(self, loss):

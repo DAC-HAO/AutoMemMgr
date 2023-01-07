@@ -22,6 +22,7 @@ class UploadParameter(torch.autograd.Function):
         ctx.params_indices = params_indices
         for param_idx in params_indices:
             fp16_param = ModelParameters.fp16_params[param_idx]
+            print(fp16_param.data.device == "cpu")
             if fp16_param.data.device == "cpu":
                 fp16_param.data = fp16_param.data.to("cuda")
             else:
