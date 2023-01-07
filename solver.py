@@ -78,7 +78,7 @@ class Solver:
                 if grad_in_computed.get(in_node, False):
                     runtime_mem -= calculate_fwd_out(in_node)
                     grad_in_computed[in_node] = True
-
+        print(runtime_mem)
         return peak_mem, total_mem_saving
 
     def _call_solver_greedy_v1(self):
