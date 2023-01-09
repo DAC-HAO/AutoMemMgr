@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torch.utils._pytree import tree_map
 
-from colossalai.utils.model.colo_init_context import ColoInitContext
+from colossalai.fx.profiler import parameter_size
 
 from mem_offload_optimize import memory_optimization
 
@@ -29,13 +29,20 @@ class MyModel(nn.Module):
 model = MyModel()
 data_dict = {"x" : torch.rand((1, 512))}
 
-model = memory_optimization(model, data_dict, 1024*1024*4.0*8)
+param_size = parameter_size(model)
+model = memory_optimization(model, data_dict, 1024*1024*4.0*5)
 wrap_fn = lambda x: x.to("cuda") if isinstance(x, torch.Tensor) else x
+data_dict = tree_map(wrap_fn, data_dict)
 
 torch.cuda.synchronize()
 torch.cuda.reset_peak_memory_stats()
 start_time = time.time()
-loss = torch.sum(model(**tree_map(wrap_fn, data_dict)))
+loss = torch.sum(model(**data_dict))
 loss.backward()
 torch.cuda.synchronize()
-print(time.time() - start_time, torch.cuda.max_memory_allocated()/1024**2, "MB")
+
+exec_time = time.time() - start_time
+runtime_peak_mem = torch.cuda.max_memory_allocated()/1024**2
+print(
+        f'|exec_time={exec_time:.3f} s | param_size={param_size:.3f} MB | runtime_peak_mem={runtime_peak_mem:.3f} MB|'
+    )
