@@ -41,8 +41,13 @@ def memory_optimization(model: torch.nn.Module, inps: Dict[str, torch.Tensor], m
     offload_strategies_constructor.build_strategies_and_cost()
 
     solver = Solver(gm.graph, offload_strategies_constructor, memory_budget)
-    # solver._call_solver_greedy_v1()
-    solver._call_solver_l2l()
+    solver._call_solver_greedy_v1()
+    # solver._call_solver_l2l()
+
+    # print offload node
+    for node in graph.nodes:
+        if node.node_info.offload_param_flag:
+            print(node.op, node.name)
 
     gm = runtime_offload_apply_pass(gm)
     gm.recompile()

@@ -41,10 +41,6 @@ loss = torch.sum(model(**data_dict))
 loss.backward()
 torch.cuda.synchronize()
 
-for node in model.model.graph.nodes:
-    if node.node_info.offload_param_flag:
-        print(node.op, node.name)
-
 exec_time = time.time() - start_time
 runtime_peak_mem = torch.cuda.max_memory_allocated()/1024**2
 print(
