@@ -153,7 +153,9 @@ class AsynGreedySolver:
         while self.peak_mem > self.memory_budget:
             node_to_offload = None
             max_offload_profit = (0,)
+            # record corresponding host node which prefetch the node to be offloaded
             node_to_node_map = {}
+            # record the memory saving from the node to be offloaded
             node_to_mem_saving_map = {}
 
             # search which node should be offloaded
@@ -186,7 +188,7 @@ class AsynGreedySolver:
                         node_to_offload = node
                         max_offload_profit = max_prefetch_profit
 
-            node_to_offload.node_info.node_to_prefetch = node_to_node_map[node_to_offload]
+            node_to_node_map[node_to_offload].node_info.node_to_prefetch = node_to_offload
             node_to_offload.node_info.offload_param_flag = True
             self.peak_mem -= node_to_mem_saving_map[node_to_offload]
 
@@ -248,6 +250,8 @@ class AsynGreedySolver:
 
     def _compute_offload_profit(self, mem_saving: float, extra_cost: float):
         if extra_cost == 0:
+            # If the prefetch operation can be completely overlapped,
+            # then will provide memory saving information to downstream
             return (float('inf'), mem_saving)
         return (mem_saving/extra_cost, )
 
