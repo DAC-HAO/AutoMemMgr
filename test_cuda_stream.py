@@ -18,6 +18,7 @@ torch.cuda.synchronize()
 print("asyn", time.time() - start)
 
 # syn
+a = torch.rand((4096, 4096))
 torch.cuda.synchronize()
 start = time.time()
 e = b * c
