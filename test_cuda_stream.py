@@ -26,8 +26,8 @@ import torch
 # torch.cuda.synchronize()
 # print("syn", time.time() - start)
 
-a = torch.rand((128, 128), device="cuda:0")
-b = torch.rand((128, 128), device="cuda:0")
+a = torch.rand((1024, 1024), device="cuda:0")
+b = torch.rand((1024, 1024), device="cuda:0")
 torch.cuda.synchronize()
 start = time.time()
 c = a * b
