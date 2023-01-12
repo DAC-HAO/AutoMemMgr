@@ -1,9 +1,9 @@
 import time
 import torch
 
-a = torch.rand((1024, 1024), pin_memory=True)
-b = torch.rand((64, 64), device="cuda")
-c = torch.rand((64, 64), device="cuda")
+a = torch.rand((4096, 4096), pin_memory=True)
+b = torch.rand((256, 256), device="cuda")
+c = torch.rand((256, 256), device="cuda")
 
 # s1 = torch.cuda.Stream()
 s2 = torch.cuda.Stream()
