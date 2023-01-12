@@ -191,6 +191,7 @@ class AsynGreedySolver:
                         node_to_offload = node
                         max_offload_profit = max_prefetch_profit
 
+            print('node_to_offload', node_to_offload)
             node_to_node_map[node_to_offload].node_info.node_to_prefetch = node_to_offload
             node_to_offload.node_info.offload_param_flag = True
             self.peak_mem -= node_to_mem_saving_map[node_to_offload]
