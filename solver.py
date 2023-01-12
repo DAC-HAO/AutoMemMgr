@@ -164,6 +164,7 @@ class AsynGreedySolver:
             for node in self.nodes:
                 if node.node_info.has_param and (not node.node_info.offload_param_flag):
                     node_idx = self.nodes.index(node)
+                    print('node_idx', node_idx)
                     max_prefetch_profit = (0,)
 
                     # TODO 当前并未保证 prefetch 遵循 backward 的顺序执行
