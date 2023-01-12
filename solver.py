@@ -192,7 +192,11 @@ class AsynGreedySolver:
                         max_offload_profit = max_prefetch_profit
 
             print('node_to_offload', node_to_offload)
-            node_to_node_map[node_to_offload].node_info.node_to_prefetch = node_to_offload
+            if node_to_node_map[node_to_offload] == node_to_offload:
+                node_to_offload.node_info.syn_upload_flag = True
+            else:
+                node_to_node_map[node_to_offload].node_info.node_to_prefetch = node_to_offload
+
             node_to_offload.node_info.offload_param_flag = True
             self.peak_mem -= node_to_mem_saving_map[node_to_offload]
 
@@ -227,14 +231,12 @@ class AsynGreedySolver:
         # backward
         for node in self.graph.nodes.__reversed__():
 
-            if node.node_info.offload_param_flag:
-                # wait parameter prefetch
-                # TODO 最后一个节点是 output node，不会被offload
-                assert node.node_info.prefetch_end_timestamp != 0
-                compute_timestamp = max(node.node_info.prefetch_end_timestamp, compute_timestamp)
-
             # prefetch parameter, which is parallel to node computation
             node_to_prefetch = node.node_info.node_to_prefetch
+            if node.node_info.syn_upload_flag:
+                # synchronous upload parameter
+                assert node.node_info.offload_param_flag
+                node_to_prefetch = node
             if node_to_prefetch is not None:
                 prefetch_timestamp = max(prefetch_timestamp, compute_timestamp)
                 self.param_prefetch_stream.append(
@@ -242,6 +244,12 @@ class AsynGreedySolver:
                      prefetch_timestamp + node_to_prefetch.node_info.param_size / SystemConfig.BANDWIDTH])
                 prefetch_timestamp += node_to_prefetch.node_info.param_size / SystemConfig.BANDWIDTH
                 node_to_prefetch.node_info.prefetch_end_timestamp = prefetch_timestamp
+
+            if node.node_info.offload_param_flag:
+                # wait parameter prefetch
+                # TODO 最后一个节点是 output node，不会被offload
+                assert node.node_info.prefetch_end_timestamp != 0
+                compute_timestamp = max(node.node_info.prefetch_end_timestamp, compute_timestamp)
 
             self.node_compute_stream.append(
                 [compute_timestamp, compute_timestamp + node.meta.get('bwd_flop', 0) / SystemConfig.COMPUTE_POWER])
@@ -296,6 +304,10 @@ class AsynGreedySolver:
             node_to_prefetch = node.node_info.node_to_prefetch
             if node == host_node_for_prefetch:
                 node_to_prefetch = node_to_offload
+            if node.node_info.syn_upload_flag:
+                # synchronous upload parameter
+                assert node.node_info.offload_param_flag
+                node_to_prefetch = node
             if node_to_prefetch is not None:
                 # TODO 如果 prefetch stream 被阻塞，内存是否有可能也被延迟分配
                 runtime_mem += node_to_prefetch.node_info.param_size
@@ -356,20 +368,24 @@ class AsynGreedySolver:
         prefetch_start_timestamp = compute_start_timestamp
         for node in self.graph.nodes.__reversed__():
 
-            if node.node_info.offload_param_flag or (node == node_to_offload):
-                # wait parameter prefetch
-                assert node.node_info.prefetch_end_timestamp != 0
-                compute_start_timestamp = max(node.node_info.prefetch_end_timestamp, compute_start_timestamp)
-
             # prefetch parameter, which is parallel to node computation
             node_to_prefetch = node.node_info.node_to_prefetch
             if node == host_node_for_prefetch:
                 assert node.node_info.node_to_prefetch is None
                 node_to_prefetch = node_to_offload
+            if node.node_info.syn_upload_flag:
+                # synchronous upload parameter
+                assert node.node_info.offload_param_flag
+                node_to_prefetch = node
             if node_to_prefetch is not None:
                 prefetch_start_timestamp = max(prefetch_start_timestamp, compute_start_timestamp)
                 prefetch_start_timestamp += node_to_prefetch.node_info.param_size / SystemConfig.BANDWIDTH
                 node_to_prefetch.node_info.prefetch_end_timestamp = prefetch_start_timestamp
+
+            if node.node_info.offload_param_flag or (node == node_to_offload):
+                # wait parameter prefetch
+                assert node.node_info.prefetch_end_timestamp != 0
+                compute_start_timestamp = max(node.node_info.prefetch_end_timestamp, compute_start_timestamp)
 
             compute_start_timestamp += node.meta.get('bwd_flop', 0) / SystemConfig.COMPUTE_POWER
 

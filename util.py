@@ -21,6 +21,6 @@ class NodeInfo:
     runtime_bwd_mem: float = 0
     offload_strategies_vector: OffloadStrategiesVector = None
     # asyn
-    # prefetch_param_aft_fwd: Node = None
     node_to_prefetch: Node = None
+    syn_upload_flag: bool = False
     prefetch_end_timestamp: float = 0
