@@ -152,6 +152,7 @@ class AsynGreedySolver:
     def _call_solver_greedy(self):
         peak_mem_saving, total_mem_saving = self._compute_mem_saving()
         assert peak_mem_saving == 0 and total_mem_saving < 0
+        print("init peak memory", self.peak_mem/1024**2, "MB")
         while self.peak_mem > self.memory_budget:
             node_to_offload = None
             max_offload_profit = (0,)

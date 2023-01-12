@@ -46,9 +46,9 @@ def memory_optimization(model: torch.nn.Module, inps: Dict[str, torch.Tensor], m
     solver._call_solver_greedy()
 
     # print offload node
+    print("****************** offload plan *******************")
     for node in graph.nodes:
-        if node.node_info.offload_param_flag:
-            print(node.op, node.name, node.node_info.node_to_prefetch)
+        print(node.op, node.name, node.node_info.node_to_prefetch, node.node_info.offload_param_flag)
 
     gm = runtime_offload_apply_pass(gm)
     gm.recompile()
