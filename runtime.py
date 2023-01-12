@@ -128,4 +128,28 @@ def runtime_offload_apply_pass(gm: torch.fx.GraphModule):
     return gm
 
 
+def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
+    """
+    This pass is used to add the asynchronous offload spec apply node to the origin graph.
+    """
+    mod_graph = gm.graph
+    nodes = tuple(mod_graph.nodes)
+    for node in nodes:
+        if node.node_info.has_param:
+            param_indices = node.node_info.param_indices
+            assert isinstance(param_indices, list)
+
+            last_inp_node = list(node._input_nodes.keys())[-1]
+            # mod_graph.inserting_before(node) maybe invalid
+            with mod_graph.inserting_after(last_inp_node):
+                upload_apply_node = mod_graph.create_node('call_function', convert_upload_to_action,
+                                                          args=(last_inp_node, param_indices))
+            replace_node_users(last_inp_node, upload_apply_node)
+
+            if node.node_info.offload_param_flag:
+                with mod_graph.inserting_after(node):
+                    offload_apply_node = mod_graph.create_node('call_function', convert_offload_to_action,
+                                                               args=(node, param_indices))
+                replace_node_users(node, offload_apply_node)
+    return gm
 
