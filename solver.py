@@ -126,6 +126,8 @@ class AsynGreedySolver:
         # used to record prefetch operation start and end time stamp of each node
         self.param_prefetch_stream: List[List[float, float]] = []
 
+        self._init_compute_stream()
+
         self.peak_mem = -1
 
     def _init_compute_stream(self):

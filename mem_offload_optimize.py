@@ -13,12 +13,10 @@ from colossalai.amp.naive_amp import FP16Optimizer
 from colossalai.amp.naive_amp.grad_scaler import DynamicGradScaler
 
 from strategies_constructor import OffloadStrategiesConstructor
-from solver import Solver
+from solver import Solver, AsynGreedySolver
 from runtime import runtime_offload_apply_pass
 from basic_offload_module import BasicOffloadModule, AMPOptimizer
 
-if is_compatible_with_meta():
-    from colossalai.fx.profiler import MetaTensor
 
 def memory_optimization(model: torch.nn.Module, inps: Dict[str, torch.Tensor], memory_budget: float=-1.0):
     model.cpu()
@@ -40,17 +38,20 @@ def memory_optimization(model: torch.nn.Module, inps: Dict[str, torch.Tensor], m
     offload_strategies_constructor = OffloadStrategiesConstructor(graph)
     offload_strategies_constructor.build_strategies_and_cost()
 
-    solver = Solver(gm.graph, offload_strategies_constructor, memory_budget)
-    solver._call_solver_greedy_v1()
+    # solver = Solver(gm.graph, offload_strategies_constructor, memory_budget)
+    # solver._call_solver_greedy_v1()
     # solver._call_solver_l2l()
+
+    solver = AsynGreedySolver(gm.graph, memory_budget)
+    solver._call_solver_greedy()
 
     # print offload node
     for node in graph.nodes:
         if node.node_info.offload_param_flag:
-            print(node.op, node.name)
+            print(node.op, node.name, node.node_info.node_to_prefetch)
 
-    gm = runtime_offload_apply_pass(gm)
-    gm.recompile()
-    optimized_model = BasicOffloadModule(gm)
-    return optimized_model
+    # gm = runtime_offload_apply_pass(gm)
+    # gm.recompile()
+    # optimized_model = BasicOffloadModule(gm)
+    # return optimized_model
 
