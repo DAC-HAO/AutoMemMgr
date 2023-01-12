@@ -22,7 +22,7 @@ torch.cuda.synchronize()
 start = time.time()
 e = b * c
 a_cuda = torch.empty((4096, 4096), device="cuda")
-a_cuda.copy_(a, non_blocking=True)
+a_cuda.copy_(a)
 torch.cuda.synchronize()
 print("syn", time.time() - start)
 
