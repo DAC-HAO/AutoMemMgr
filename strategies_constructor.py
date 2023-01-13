@@ -112,8 +112,10 @@ class OffloadStrategiesConstructor:
             # setattr(node, 'fp16_params', fp16_params)
             # setattr(node, 'fp32_master_params', fp32_master_params)
 
+        node_id = 0
         for node in self.nodes:
-            setattr(node, "node_info", NodeInfo())
+            node_id += 1
+            setattr(node, "node_info", NodeInfo(node_id=node_id))
             strategies_vector = OffloadStrategiesVector(node)
 
             if _check_no_strategy_for_node(node):
