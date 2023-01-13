@@ -11,6 +11,10 @@ class ModelParameters:
     fp16_params = []
     fp32_master_params = []
 
+class GlobalCudaInfo:
+    h2d_stream = torch.cuda.Stream()
+    param_event_map = {}
+
 @dataclass
 class NodeInfo:
     has_param: bool = False

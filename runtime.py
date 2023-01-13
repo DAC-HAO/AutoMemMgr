@@ -3,10 +3,10 @@ import torch
 from torch.fx.node import Node
 from colossalai.gemini.tensor_utils import alloc_storage, free_storage
 
-from util import ModelParameters
+from util import ModelParameters, GlobalCudaInfo
 
 
-class UploadParameter(torch.autograd.Function):
+class PreForwardUpload(torch.autograd.Function):
     """
     A customized upload operation which forward is parameter upload operation,
     backward is a parameter release operation.
@@ -31,14 +31,14 @@ class UploadParameter(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        # prefetch
+        # release
         for param_idx in ctx.params_indices:
             fp16_param = ModelParameters.fp16_params[param_idx]
             free_storage(fp16_param.data)
         return grad_output, None
 
 
-class OffloadParameter(torch.autograd.Function):
+class AftForwardOffload(torch.autograd.Function):
     """
     A customized offload operation which forward is parameter release operation,
     backward is a parameter upload operation.
@@ -50,7 +50,7 @@ class OffloadParameter(torch.autograd.Function):
 
     @staticmethod
     def forward(ctx, input_, params_indices):
-        # offload
+        # release
         ctx.params_indices = params_indices
         for param_idx in params_indices:
             free_storage(ModelParameters.fp16_params[param_idx].data)
@@ -58,11 +58,81 @@ class OffloadParameter(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        # prefetch
+        # upload
         for param_idx in ctx.params_indices:
             fp16_param = ModelParameters.fp16_params[param_idx]
             alloc_storage(fp16_param.data)
             fp16_param.data.copy_(ModelParameters.fp32_master_params[param_idx].data)
+        return grad_output, None
+
+
+
+class PreBackwardPrefetch(torch.autograd.Function):
+    """
+    A customized prefetch operation which forward is parameter upload operation,
+    backward is a parameter release operation.
+
+    Args:
+        input_: input matrix.
+        params_indices:.
+    """
+
+    @staticmethod
+    def forward(ctx, input_, params_indices):
+        ctx.params_indices = params_indices
+        # nothing to run
+        return input_
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        # prefetch
+        params_indices = ctx.params_indices
+        with torch.cuda.stream(GlobalCudaInfo.h2d_stream):
+            for param_idx in params_indices:
+                fp16_param = ModelParameters.fp16_params[param_idx]
+                alloc_storage(fp16_param.data)
+                fp16_param.data.copy_(ModelParameters.fp32_master_params[param_idx].data, non_blocking=True)
+
+        # insert event to record H2D stream
+        prefetch_event = torch.cuda.Event()
+        prefetch_event.record(GlobalCudaInfo.h2d_stream)
+        GlobalCudaInfo.param_event_map[params_indices] = prefetch_event
+
+        return grad_output, None
+
+class AftForwardOffloadAsyn(torch.autograd.Function):
+    """
+    A customized offload operation which forward is parameter release operation,
+    backward is a parameter upload operation.
+
+    Args:
+        input_: input matrix.
+        params_indices:.
+    """
+
+    @staticmethod
+    def forward(ctx, input_, params_indices, syn_upload_flag):
+        # offload
+        ctx.params_indices = params_indices
+        ctx.syn_upload_flag = syn_upload_flag
+        for param_idx in params_indices:
+            free_storage(ModelParameters.fp16_params[param_idx].data)
+        return input_
+
+    @staticmethod
+    def backward(ctx, grad_output):
+
+        # wait parameter prefetch
+        prefetch_event = GlobalCudaInfo.param_event_map.get(ctx.params_indices, None)
+        if prefetch_event is not None:
+            assert isinstance(prefetch_event, torch.cuda.Event)
+            prefetch_event.wait()
+            # torch.cuda.current_stream().wait_event(prefetch_event)
+        elif ctx.syn_upload_flag:
+            for param_idx in ctx.params_indices:
+                fp16_param = ModelParameters.fp16_params[param_idx]
+                alloc_storage(fp16_param.data)
+                fp16_param.data.copy_(ModelParameters.fp32_master_params[param_idx].data)
         return grad_output, None
 
 def convert_upload_to_action(tensor, params_indices):
@@ -72,7 +142,7 @@ def convert_upload_to_action(tensor, params_indices):
     Argument:
         tensor(torch.Tensor): Tensor stored in each device, which could be different in different ranks.
     '''
-    return UploadParameter.apply(tensor, params_indices)
+    return PreForwardUpload.apply(tensor, params_indices)
 
 def convert_offload_to_action(tensor, params_indices):
     '''
@@ -81,7 +151,26 @@ def convert_offload_to_action(tensor, params_indices):
     Argument:
         tensor(torch.Tensor): Tensor stored in each device, which could be different in different ranks.
     '''
-    return OffloadParameter.apply(tensor, params_indices)
+    return AftForwardOffload.apply(tensor, params_indices)
+
+
+def convert_prefetch_to_action(tensor, params_indices):
+    '''
+    Convert UploadSpec into runtime action, implement upload operation target tensor.
+
+    Argument:
+        tensor(torch.Tensor): Tensor stored in each device, which could be different in different ranks.
+    '''
+    return PreBackwardPrefetch.apply(tensor, params_indices)
+
+def convert_offload_to_action_asyn(tensor, params_indices, syn_upload_flag=False):
+    '''
+    Convert OffloadSpec into runtime action, implement offload operation target tensor.
+
+    Argument:
+        tensor(torch.Tensor): Tensor stored in each device, which could be different in different ranks.
+    '''
+    return AftForwardOffloadAsyn.apply(tensor, params_indices, syn_upload_flag)
 
 
 def replace_node_users(orig_node: Node, inserted_node: Node):
@@ -135,21 +224,32 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
     mod_graph = gm.graph
     nodes = tuple(mod_graph.nodes)
     for node in nodes:
+
+        node_to_prefetch = node.node_info.node.node_to_prefetch
+        if node_to_prefetch is not None:
+            param_indices = node_to_prefetch.node_info.param_indices
+            assert isinstance(param_indices, list)
+            with mod_graph.inserting_after(node):
+                prefetch_apply_node = mod_graph.create_node('call_function', convert_prefetch_to_action,
+                                                          args=(node, param_indices))
+            replace_node_users(node, prefetch_apply_node)
+
         if node.node_info.has_param:
             param_indices = node.node_info.param_indices
             assert isinstance(param_indices, list)
 
             last_inp_node = list(node._input_nodes.keys())[-1]
-            # mod_graph.inserting_before(node) maybe invalid
+
             with mod_graph.inserting_after(last_inp_node):
                 upload_apply_node = mod_graph.create_node('call_function', convert_upload_to_action,
                                                           args=(last_inp_node, param_indices))
             replace_node_users(last_inp_node, upload_apply_node)
 
             if node.node_info.offload_param_flag:
+                syn_upload_flag = node.node_info.syn_upload_flag
                 with mod_graph.inserting_after(node):
-                    offload_apply_node = mod_graph.create_node('call_function', convert_offload_to_action,
-                                                               args=(node, param_indices))
+                    offload_apply_node = mod_graph.create_node('call_function', convert_offload_to_action_asyn,
+                                                               args=(node, param_indices, syn_upload_flag))
                 replace_node_users(node, offload_apply_node)
     return gm
 
