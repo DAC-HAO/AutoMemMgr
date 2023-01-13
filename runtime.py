@@ -225,7 +225,7 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
     nodes = tuple(mod_graph.nodes)
     for node in nodes:
 
-        node_to_prefetch = node.node_info.node.node_to_prefetch
+        node_to_prefetch = node.node_info.node_to_prefetch
         if node_to_prefetch is not None:
             param_indices = node_to_prefetch.node_info.param_indices
             assert isinstance(param_indices, list)
