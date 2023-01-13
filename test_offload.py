@@ -46,7 +46,7 @@ model = MyModel()
 data_dict = {"x" : torch.rand((1, 512))}
 
 param_size = parameter_size(model)/1024**2
-model = memory_optimization(model, data_dict, 1024*1024*21)
+model = memory_optimization(model, data_dict, 1024*1024*32)
 wrap_fn = lambda x: x.to("cuda") if isinstance(x, torch.Tensor) else x
 data_dict = tree_map(wrap_fn, data_dict)
 
