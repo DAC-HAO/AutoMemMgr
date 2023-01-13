@@ -19,7 +19,7 @@ class MyModel(nn.Module):
         # self.fc5 = nn.Linear(512, 512, bias=False)
 
 
-        self.fc_list = nn.ModuleList()
+        self.fc_list = nn.ModuleList([])
         dim_list = [512, 1024, 2048]
         in_dim = dim_list[0]
         for iii in range(10):
