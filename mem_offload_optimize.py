@@ -40,7 +40,7 @@ def memory_optimization(model: torch.nn.Module, inps: Dict[str, torch.Tensor], m
 
     solver = Solver(gm.graph, offload_strategies_constructor, memory_budget)
     solver._call_solver_greedy_v1()
-    solver._call_solver_l2l()
+    # solver._call_solver_l2l()
 
     # solver = AsynGreedySolver(gm.graph, memory_budget)
     # solver._call_solver_greedy()
