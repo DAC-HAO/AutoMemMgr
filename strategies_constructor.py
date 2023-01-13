@@ -89,7 +89,7 @@ class OffloadStrategiesConstructor:
                     node_info.param_indices.append(ModelParameters.param_idx)
                     node_info.param_size += p.data.numel() * p.data.element_size()
                     ModelParameters.fp16_params.append(p)
-                    ModelParameters.fp32_master_params.append(p.detach().clone().float())
+                    ModelParameters.fp32_master_params.append(p.detach().clone().float().pin_memory())
                     ModelParameters.param_idx += 1
 
             elif node.op == 'call_function':

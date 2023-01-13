@@ -18,7 +18,7 @@ class MyModel(nn.Module):
         # self.fc4 = nn.Linear(2048, 512, bias=False)
         # self.fc5 = nn.Linear(512, 512, bias=False)
 
-        random.seed(12)
+        random.seed(66)
         self.fc_list = nn.ModuleList([])
         dim_list = [512, 1024, 2048]
         in_dim = dim_list[0]
