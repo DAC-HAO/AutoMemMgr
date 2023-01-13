@@ -50,8 +50,8 @@ def memory_optimization(model: torch.nn.Module, inps: Dict[str, torch.Tensor], m
     for node in graph.nodes:
         print(node.op, node.name, node.node_info.node_to_prefetch, node.node_info.offload_param_flag)
 
-    # gm = runtime_offload_apply_pass(gm)
-    gm = runtime_asyn_offload_apply_pass(gm)
+    gm = runtime_offload_apply_pass(gm)
+    # gm = runtime_asyn_offload_apply_pass(gm)
 
     gm.recompile()
     optimized_model = BasicOffloadModule(gm)
