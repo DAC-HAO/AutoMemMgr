@@ -1,3 +1,4 @@
+import random
 import time
 import torch
 import torch.nn as nn
@@ -11,18 +12,30 @@ class MyModel(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.fc1 = nn.Linear(512, 1024, bias=False)
-        self.fc2 = nn.Linear(1024, 1024, bias=False)
-        self.fc3 = nn.Linear(1024, 2048, bias=False)
-        self.fc4 = nn.Linear(2048, 512, bias=False)
-        self.fc5 = nn.Linear(512, 512, bias=False)
+        # self.fc1 = nn.Linear(512, 1024, bias=False)
+        # self.fc2 = nn.Linear(1024, 1024, bias=False)
+        # self.fc3 = nn.Linear(1024, 2048, bias=False)
+        # self.fc4 = nn.Linear(2048, 512, bias=False)
+        # self.fc5 = nn.Linear(512, 512, bias=False)
+
+
+        self.fc_list = nn.ModuleList()
+        dim_list = [512, 1024, 2048]
+        in_dim = dim_list[0]
+        for iii in range(10):
+            out_dim = dim_list[random.randint(0, 2)]
+            self.fc_list.append(nn.Linear(in_dim, out_dim))
+            in_dim = out_dim
+
 
     def forward(self, x):
-        out = self.fc1(x)
-        out = self.fc2(out)
-        out = self.fc3(out)
-        out = self.fc4(out)
-        out = self.fc5(out)
+        # out = self.fc1(x)
+        # out = self.fc2(out)
+        # out = self.fc3(out)
+        # out = self.fc4(out)
+        # out = self.fc5(out)
+
+        out = self.fc_list(x)
         return out
 
 
