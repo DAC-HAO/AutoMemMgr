@@ -14,7 +14,7 @@ from colossalai.amp.naive_amp.grad_scaler import DynamicGradScaler
 
 from strategies_constructor import OffloadStrategiesConstructor
 from solver import Solver, AsynGreedySolver
-from runtime import runtime_offload_apply_pass
+from runtime import runtime_offload_apply_pass, runtime_asyn_offload_apply_pass
 from basic_offload_module import BasicOffloadModule, AMPOptimizer
 
 
@@ -50,7 +50,9 @@ def memory_optimization(model: torch.nn.Module, inps: Dict[str, torch.Tensor], m
     for node in graph.nodes:
         print(node.op, node.name, node.node_info.node_to_prefetch, node.node_info.offload_param_flag)
 
-    gm = runtime_offload_apply_pass(gm)
+    # gm = runtime_offload_apply_pass(gm)
+    gm = runtime_asyn_offload_apply_pass(gm)
+
     gm.recompile()
     optimized_model = BasicOffloadModule(gm)
     return optimized_model
