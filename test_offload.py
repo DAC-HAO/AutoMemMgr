@@ -55,7 +55,7 @@ torch.cuda.reset_peak_memory_stats()
 start_time = time.time()
 
 prof = torch.profiler.profile(
-        schedule=torch.profiler.schedule(wait=1, warmup=1, active=3, repeat=2),
+        schedule=torch.profiler.schedule(wait=0, warmup=1, active=3, repeat=2),
         on_trace_ready=torch.profiler.tensorboard_trace_handler('./log/offload'),
         record_shapes=True,
         with_stack=True)
@@ -63,7 +63,7 @@ prof.start()
 
 loss = torch.sum(model(**data_dict))
 loss.backward()
-
+prof.step()
 prof.stop()
 
 torch.cuda.synchronize()
