@@ -99,7 +99,7 @@ class PreBackwardPrefetch(torch.autograd.Function):
         prefetch_event.record(GlobalCudaInfo.h2d_stream)
         GlobalCudaInfo.param_event_map[ctx.node_id] = prefetch_event
 
-        return grad_output, None
+        return grad_output, None, None
 
 class AftForwardOffloadAsyn(torch.autograd.Function):
     """
@@ -135,7 +135,7 @@ class AftForwardOffloadAsyn(torch.autograd.Function):
                 fp16_param = ModelParameters.fp16_params[param_idx]
                 alloc_storage(fp16_param.data)
                 fp16_param.data.copy_(ModelParameters.fp32_master_params[param_idx].data)
-        return grad_output, None
+        return grad_output, None, None, None
 
 def convert_upload_to_action(tensor, params_indices):
     '''
