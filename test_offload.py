@@ -24,7 +24,7 @@ class MyModel(nn.Module):
         in_dim = dim_list[0]
         for iii in range(10):
             out_dim = dim_list[random.randint(0, 2)]
-            self.fc_list.append(nn.Linear(in_dim, out_dim))
+            self.fc_list.append(nn.Linear(in_dim, out_dim, bias=False))
             in_dim = out_dim
 
 
