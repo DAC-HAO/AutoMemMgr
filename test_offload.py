@@ -34,9 +34,12 @@ class MyModel(nn.Module):
         # out = self.fc3(out)
         # out = self.fc4(out)
         # out = self.fc5(out)
+        # return out
 
-        out = self.fc_list(x)
-        return out
+        for m in self.fc_list:
+            x = m(x)
+        return x
+
 
 
 model = MyModel()
