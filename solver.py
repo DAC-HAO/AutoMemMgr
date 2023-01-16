@@ -231,6 +231,8 @@ class AsynGreedySolver:
 
         for node_to_offload, host_node in self.node_to_node_map.items():
             if node_to_offload == host_node:
+                assert node_to_offload.node_info.offload_param_flag
+                assert node_to_offload.node_info.syn_upload_flag
                 continue
 
             assert node_to_offload.node_info.offload_param_flag
@@ -241,13 +243,13 @@ class AsynGreedySolver:
             host_node.node_info.node_to_prefetch = None
 
             tmp_peak_mem_saving, tmp_total_mem_saving = self._compute_mem_saving(node_to_offload, node_to_offload)
-            print("tmp_peak_mem_saving", tmp_peak_mem_saving, node_to_offload)
+            print("tmp_peak_mem_saving", tmp_peak_mem_saving/1024**2, node_to_offload)
             if tmp_peak_mem_saving <= 0:
                 continue
 
             extra_comm_cost = self._compute_extra_comm_cost(node_to_offload, node_to_offload)
             # tmp_profit = self._compute_offload_profit(tmp_peak_mem_saving, extra_comm_cost)
-            print("pre compute profit", tmp_total_mem_saving, extra_comm_cost)
+            print("pre compute profit", tmp_total_mem_saving/1024**2, extra_comm_cost)
             tmp_profit = self._compute_offload_profit(tmp_total_mem_saving, extra_comm_cost)
             print(tmp_profit)
             if self._compare_profit(tmp_profit, max_profit):
