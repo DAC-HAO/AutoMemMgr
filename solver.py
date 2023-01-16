@@ -230,10 +230,11 @@ class AsynGreedySolver:
         cancel_host_node = None
 
         for node_to_offload, host_node in self.node_to_node_map.items():
-            assert node_to_offload.node_info.offload_param_flag
-            assert host_node.node_info.node_to_prefetch == node_to_offload
             if node_to_offload == host_node:
                 continue
+
+            assert node_to_offload.node_info.offload_param_flag
+            assert host_node.node_info.node_to_prefetch == node_to_offload
 
             # cancel offload for the node
             node_to_offload.node_info.offload_param_flag = False
@@ -246,6 +247,7 @@ class AsynGreedySolver:
 
             extra_comm_cost = self._compute_extra_comm_cost(node_to_offload, node_to_offload)
             # tmp_profit = self._compute_offload_profit(tmp_peak_mem_saving, extra_comm_cost)
+            print("pre compute profit", tmp_total_mem_saving, extra_comm_cost)
             tmp_profit = self._compute_offload_profit(tmp_total_mem_saving, extra_comm_cost)
             print(tmp_profit)
             if self._compare_profit(tmp_profit, max_profit):
@@ -424,6 +426,8 @@ class AsynGreedySolver:
         # 假设不会在同一个 node 上挂两个 prefetch operation
         # forward stream 不会被影响
 
+        node_prefetch_end_timestamp = {}
+
         compute_start_timestamp = self.node_compute_stream[len(self.nodes)][0]
         prefetch_start_timestamp = compute_start_timestamp
         for node in self.graph.nodes.__reversed__():
@@ -440,12 +444,15 @@ class AsynGreedySolver:
             if node_to_prefetch is not None:
                 prefetch_start_timestamp = max(prefetch_start_timestamp, compute_start_timestamp)
                 prefetch_start_timestamp += node_to_prefetch.node_info.param_size / SystemConfig.BANDWIDTH
-                node_to_prefetch.node_info.prefetch_end_timestamp = prefetch_start_timestamp
+                # node_to_prefetch.node_info.prefetch_end_timestamp = prefetch_start_timestamp
+                node_prefetch_end_timestamp[node_to_prefetch] = prefetch_start_timestamp
 
             if node.node_info.offload_param_flag or (node == node_to_offload):
                 # wait parameter prefetch
-                assert node.node_info.prefetch_end_timestamp != 0
-                compute_start_timestamp = max(node.node_info.prefetch_end_timestamp, compute_start_timestamp)
+                # assert node.node_info.prefetch_end_timestamp != 0
+                # compute_start_timestamp = max(node.node_info.prefetch_end_timestamp, compute_start_timestamp)
+                assert node_prefetch_end_timestamp.get(node, 0) != 0
+                compute_start_timestamp = max(node_prefetch_end_timestamp[node], compute_start_timestamp)
 
             compute_start_timestamp += node.meta.get('bwd_flop', 0) / SystemConfig.COMPUTE_POWER
 
@@ -454,7 +461,9 @@ class AsynGreedySolver:
                 compute_start_timestamp += node.node_info.param_size / SystemConfig.BANDWIDTH
 
         # restore node info
-        node_to_offload.node_info.prefetch_end_timestamp = 0
+        # node_to_offload.node_info.prefetch_end_timestamp = 0
+
+        node_prefetch_end_timestamp.clear()
 
         return max(compute_start_timestamp-self.node_compute_stream[-1][1], 0)
 
