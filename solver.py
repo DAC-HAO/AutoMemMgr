@@ -239,8 +239,8 @@ class AsynGreedySolver:
             assert host_node.node_info.node_to_prefetch == node_to_offload
 
             # cancel offload for the node
-            node_to_offload.node_info.offload_param_flag = False
-            host_node.node_info.node_to_prefetch = None
+            # node_to_offload.node_info.offload_param_flag = False
+            # host_node.node_info.node_to_prefetch = None
 
             tmp_peak_mem_saving, tmp_total_mem_saving = self._compute_mem_saving(node_to_offload, node_to_offload)
             print("tmp_peak_mem_saving", tmp_peak_mem_saving/1024**2, node_to_offload)
