@@ -129,6 +129,10 @@ class AsynGreedySolver:
         self._init_compute_stream()
 
         self.peak_mem = -1
+        # record corresponding host node which prefetch the node to be offloaded
+        self.node_to_node_map = {}
+        # record the memory saving from the node to be offloaded
+        self.node_to_mem_saving_map = {}
 
     def _init_compute_stream(self):
         compute_timestamp = 0
@@ -156,10 +160,6 @@ class AsynGreedySolver:
         while self.peak_mem > self.memory_budget:
             node_to_offload = None
             max_offload_profit = (0,)
-            # record corresponding host node which prefetch the node to be offloaded
-            node_to_node_map = {}
-            # record the memory saving from the node to be offloaded
-            node_to_mem_saving_map = {}
 
             # search which node should be offloaded
             for node in self.nodes:
@@ -182,8 +182,8 @@ class AsynGreedySolver:
                         tmp_profit = self._compute_offload_profit(tmp_total_mem_saving, extra_comm_cost)
 
                         if self._compare_profit(tmp_profit, max_prefetch_profit):
-                            node_to_node_map[node] = following_node
-                            node_to_mem_saving_map[node] = tmp_peak_mem_saving
+                            self.node_to_node_map[node] = following_node
+                            self.node_to_mem_saving_map[node] = tmp_peak_mem_saving
                             max_prefetch_profit = tmp_profit
                             if tmp_profit[0] == float('inf'):
                                 break
@@ -192,20 +192,70 @@ class AsynGreedySolver:
                         node_to_offload = node
                         max_offload_profit = max_prefetch_profit
 
-            print('node_to_offload', node_to_offload, node_to_node_map[node_to_offload])
-            if node_to_node_map[node_to_offload] == node_to_offload:
-                node_to_offload.node_info.syn_upload_flag = True
-            else:
-                node_to_node_map[node_to_offload].node_info.node_to_prefetch = node_to_offload
+            if self.node_to_node_map.get(node_to_offload, None) is not None:
 
-            node_to_offload.node_info.offload_param_flag = True
-            self.peak_mem -= node_to_mem_saving_map[node_to_offload]
+                print('node_to_offload', node_to_offload, self.node_to_node_map[node_to_offload])
+                if self.node_to_node_map[node_to_offload] == node_to_offload:
+                    node_to_offload.node_info.syn_upload_flag = True
+                else:
+                    self.node_to_node_map[node_to_offload].node_info.node_to_prefetch = node_to_offload
+
+                node_to_offload.node_info.offload_param_flag = True
+                self.peak_mem -= self.node_to_mem_saving_map[node_to_offload]
+
+            else:
+                self._repair_strategy()
 
             self._update_rumtime_mem_for_node()
             self._update_exec_stream_and_node_info()
 
-            node_to_node_map.clear()
-            node_to_mem_saving_map.clear()
+            # self.node_to_node_map.clear()
+            # self.node_to_mem_saving_map.clear()
+
+
+    def _repair_strategy(self):
+
+        max_profit = (0, )
+        peak_mem_saving = 0
+        cancel_offload_node = None
+        cancel_host_node = None
+
+        for node_to_offload, host_node in self.node_to_node_map.items():
+            assert node_to_offload.node_info.offload_param_flag
+            assert host_node.node_info.node_to_prefetch == node_to_offload
+            if node_to_offload == host_node:
+                continue
+
+            # cancel offload for the node
+            node_to_offload.node_info.offload_param_flag = False
+            host_node.node_info.node_to_prefetch = None
+
+            tmp_peak_mem_saving, tmp_total_mem_saving = self._compute_mem_saving(node_to_offload, node_to_offload)
+
+            if tmp_peak_mem_saving <= 0:
+                continue
+
+            extra_comm_cost = self._compute_extra_comm_cost(node_to_offload, node_to_offload)
+            # tmp_profit = self._compute_offload_profit(tmp_peak_mem_saving, extra_comm_cost)
+            tmp_profit = self._compute_offload_profit(tmp_total_mem_saving, extra_comm_cost)
+
+            if self._compare_profit(tmp_profit, max_profit):
+                cancel_offload_node = node_to_offload
+                cancel_host_node = host_node
+                peak_mem_saving = tmp_peak_mem_saving
+                max_profit = tmp_profit
+
+            # restore node info for the offload node
+            node_to_offload.node_info.offload_param_flag = True
+            host_node.node_info.node_to_prefetch = node_to_offload
+
+        assert cancel_offload_node.node_info.syn_upload_flag == False
+        cancel_offload_node.node_info.syn_upload_flag = True
+        cancel_host_node.node_info.node_to_prefetch = None
+        self.peak_mem -= peak_mem_saving
+        self.node_to_node_map[cancel_offload_node] = cancel_offload_node
+        self.node_to_mem_saving_map[cancel_offload_node] = peak_mem_saving
+
 
 
     def _update_rumtime_mem_for_node(self):
