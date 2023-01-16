@@ -275,6 +275,9 @@ class AsynGreedySolver:
             self.node_to_node_map[cancel_offload_node] = cancel_offload_node
             self.node_to_mem_saving_map[cancel_offload_node] += peak_mem_saving
 
+        print("aft repair.......................")
+        for node_to_offload, host_node in self.node_to_node_map.items():
+            print(node_to_offload, host_node)
 
 
     def _update_rumtime_mem_for_node(self):
