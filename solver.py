@@ -223,7 +223,7 @@ class AsynGreedySolver:
 
 
     def _repair_strategy(self):
-
+        print("repair.........................")
         max_profit = (0, )
         peak_mem_saving = 0
         cancel_offload_node = None
@@ -247,7 +247,7 @@ class AsynGreedySolver:
             extra_comm_cost = self._compute_extra_comm_cost(node_to_offload, node_to_offload)
             # tmp_profit = self._compute_offload_profit(tmp_peak_mem_saving, extra_comm_cost)
             tmp_profit = self._compute_offload_profit(tmp_total_mem_saving, extra_comm_cost)
-
+            print(tmp_profit)
             if self._compare_profit(tmp_profit, max_profit):
                 cancel_offload_node = node_to_offload
                 cancel_host_node = host_node
