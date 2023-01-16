@@ -446,14 +446,22 @@ class AsynGreedySolver:
         for node in self.graph.nodes.__reversed__():
 
             # prefetch parameter, which is parallel to node computation
-            node_to_prefetch = node.node_info.node_to_prefetch
-            if node == host_node_for_prefetch:
-                # assert node.node_info.node_to_prefetch is None
-                node_to_prefetch = node_to_offload
             if node.node_info.syn_upload_flag:
                 # synchronous upload parameter
                 assert node.node_info.offload_param_flag
                 node_to_prefetch = node
+                prefetch_start_timestamp = max(prefetch_start_timestamp, compute_start_timestamp)
+                prefetch_start_timestamp += node_to_prefetch.node_info.param_size / SystemConfig.BANDWIDTH
+                # node_to_prefetch.node_info.prefetch_end_timestamp = prefetch_start_timestamp
+                node_prefetch_end_timestamp[node_to_prefetch] = prefetch_start_timestamp
+            node_to_prefetch = node.node_info.node_to_prefetch
+            if node == host_node_for_prefetch:
+                # assert node.node_info.node_to_prefetch is None
+                node_to_prefetch = node_to_offload
+            # if node.node_info.syn_upload_flag:
+            #     # synchronous upload parameter
+            #     assert node.node_info.offload_param_flag
+            #     node_to_prefetch = node
             if node_to_prefetch is not None:
                 prefetch_start_timestamp = max(prefetch_start_timestamp, compute_start_timestamp)
                 prefetch_start_timestamp += node_to_prefetch.node_info.param_size / SystemConfig.BANDWIDTH
