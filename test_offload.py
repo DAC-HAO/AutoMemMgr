@@ -43,7 +43,7 @@ class MyModel(nn.Module):
 
 
 model = MyModel()
-data_dict = {"x" : torch.rand((1, 512))}
+data_dict = {"x": torch.rand((1, 512))}
 
 param_size = parameter_size(model)/1024**2
 model = memory_optimization(model, data_dict, 1024*1024*32)
@@ -54,18 +54,18 @@ torch.cuda.synchronize()
 torch.cuda.reset_peak_memory_stats()
 start_time = time.time()
 
-prof = torch.profiler.profile(
-        schedule=torch.profiler.schedule(wait=1, warmup=1, active=3, repeat=2),
-        on_trace_ready=torch.profiler.tensorboard_trace_handler('./log/offload'),
-        record_shapes=True,
-        with_stack=True)
-prof.start()
-prof.step()
+# prof = torch.profiler.profile(
+#         schedule=torch.profiler.schedule(wait=1, warmup=1, active=3, repeat=2),
+#         on_trace_ready=torch.profiler.tensorboard_trace_handler('./log/offload'),
+#         record_shapes=True,
+#         with_stack=True)
+# prof.start()
+# prof.step()
 loss = torch.sum(model(**data_dict))
 print(loss)
 loss.backward()
-prof.step()
-prof.stop()
+# prof.step()
+# prof.stop()
 
 torch.cuda.synchronize()
 

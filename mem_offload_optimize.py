@@ -18,7 +18,10 @@ from runtime import runtime_offload_apply_pass, runtime_asyn_offload_apply_pass
 from basic_offload_module import BasicOffloadModule, AMPOptimizer
 
 
-def memory_optimization(model: torch.nn.Module, inps: Dict[str, torch.Tensor], memory_budget: float=-1.0):
+def memory_optimization(model: torch.nn.Module,
+                        inps: Dict[str, torch.Tensor],
+                        memory_budget: float=-1.0,
+                        is_syn: bool=True):
     model.cpu()
     tracer = ColoTracer()
     assert is_compatible_with_meta()
@@ -38,20 +41,27 @@ def memory_optimization(model: torch.nn.Module, inps: Dict[str, torch.Tensor], m
     offload_strategies_constructor = OffloadStrategiesConstructor(graph)
     offload_strategies_constructor.build_strategies_and_cost()
 
-    solver = Solver(gm.graph, offload_strategies_constructor, memory_budget)
-    solver._call_solver_greedy_v1()
-    solver._call_solver_l2l()
+    if is_syn:
+        solver = Solver(gm.graph, offload_strategies_constructor, memory_budget)
+        solver._call_solver_greedy_v1()
+        # solver._call_solver_l2l()
 
-    # solver = AsynGreedySolver(gm.graph, memory_budget)
-    # solver._call_solver_greedy()
+        # print offload node
+        print("****************** offload plan *******************")
+        for node in graph.nodes:
+            print(node.op, node.name, node.node_info.node_to_prefetch, node.node_info.offload_param_flag)
 
-    # print offload node
-    print("****************** offload plan *******************")
-    for node in graph.nodes:
-        print(node.op, node.name, node.node_info.node_to_prefetch, node.node_info.offload_param_flag)
+        gm = runtime_offload_apply_pass(gm)
+    else:
+        solver = AsynGreedySolver(gm.graph, memory_budget)
+        solver._call_solver_greedy()
 
-    gm = runtime_offload_apply_pass(gm)
-    # gm = runtime_asyn_offload_apply_pass(gm)
+        # print offload node
+        print("****************** offload plan *******************")
+        for node in graph.nodes:
+            print(node.op, node.name, node.node_info.node_to_prefetch, node.node_info.offload_param_flag)
+
+        gm = runtime_asyn_offload_apply_pass(gm)
 
     gm.recompile()
     optimized_model = BasicOffloadModule(gm)
