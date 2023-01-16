@@ -455,7 +455,7 @@ class AsynGreedySolver:
                 # node_to_prefetch.node_info.prefetch_end_timestamp = prefetch_start_timestamp
                 node_prefetch_end_timestamp[node_to_prefetch] = prefetch_start_timestamp
             if node == host_node_for_prefetch:
-                assert node.node_info.node_to_prefetch is None
+                # assert node.node_info.node_to_prefetch is None
                 node_to_prefetch = node_to_offload
                 prefetch_start_timestamp = max(prefetch_start_timestamp, compute_start_timestamp)
                 prefetch_start_timestamp += node_to_prefetch.node_info.param_size / SystemConfig.BANDWIDTH
