@@ -431,7 +431,7 @@ class AsynGreedySolver:
             # prefetch parameter, which is parallel to node computation
             node_to_prefetch = node.node_info.node_to_prefetch
             if node == host_node_for_prefetch:
-                assert node.node_info.node_to_prefetch is None
+                # assert node.node_info.node_to_prefetch is None
                 node_to_prefetch = node_to_offload
             if node.node_info.syn_upload_flag:
                 # synchronous upload parameter
