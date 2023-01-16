@@ -178,7 +178,8 @@ class AsynGreedySolver:
                             continue
 
                         extra_comm_cost = self._compute_extra_comm_cost(following_node, node)
-                        tmp_profit = self._compute_offload_profit(tmp_peak_mem_saving, extra_comm_cost)
+                        # tmp_profit = self._compute_offload_profit(tmp_peak_mem_saving, extra_comm_cost)
+                        tmp_profit = self._compute_offload_profit(tmp_total_mem_saving, extra_comm_cost)
 
                         if self._compare_profit(tmp_profit, max_prefetch_profit):
                             node_to_node_map[node] = following_node
