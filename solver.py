@@ -224,12 +224,15 @@ class AsynGreedySolver:
 
     def _repair_strategy(self):
         print("repair.........................")
-        max_profit = (0, )
+
         peak_mem_saving = 0
-        cancel_offload_node = None
-        cancel_host_node = None
 
         while peak_mem_saving > 0:
+
+            max_profit = (0,)
+            cancel_offload_node = None
+            cancel_host_node = None
+
             for node_to_offload, host_node in self.node_to_node_map.items():
                 if node_to_offload == host_node:
                     assert node_to_offload.node_info.offload_param_flag
