@@ -157,6 +157,10 @@ class AsynGreedySolver:
         peak_mem_saving, total_mem_saving = self._compute_mem_saving()
         assert peak_mem_saving == 0 and total_mem_saving < 0
         print("init peak memory", self.peak_mem/1024**2, "MB")
+        # record corresponding host node which prefetch the node to be offloaded
+        node_to_node_map = {}
+        # record the memory saving from the node to be offloaded
+        node_to_mem_saving_map = {}
         while self.peak_mem > self.memory_budget:
             node_to_offload = None
             max_offload_profit = (0,)
@@ -182,8 +186,8 @@ class AsynGreedySolver:
                         tmp_profit = self._compute_offload_profit(tmp_total_mem_saving, extra_comm_cost)
 
                         if self._compare_profit(tmp_profit, max_prefetch_profit):
-                            self.node_to_node_map[node] = following_node
-                            self.node_to_mem_saving_map[node] = tmp_peak_mem_saving
+                            node_to_node_map[node] = following_node
+                            node_to_mem_saving_map[node] = tmp_peak_mem_saving
                             max_prefetch_profit = tmp_profit
                             if tmp_profit[0] == float('inf'):
                                 break
@@ -192,16 +196,21 @@ class AsynGreedySolver:
                         node_to_offload = node
                         max_offload_profit = max_prefetch_profit
 
-            if self.node_to_node_map.get(node_to_offload, None) is not None:
+            if node_to_node_map.get(node_to_offload, None) is not None:
 
-                print('node_to_offload', node_to_offload, self.node_to_node_map[node_to_offload])
-                if self.node_to_node_map[node_to_offload] == node_to_offload:
+                print('node_to_offload', node_to_offload, node_to_node_map[node_to_offload])
+                if node_to_node_map[node_to_offload] == node_to_offload:
                     node_to_offload.node_info.syn_upload_flag = True
                 else:
-                    self.node_to_node_map[node_to_offload].node_info.node_to_prefetch = node_to_offload
+                    node_to_node_map[node_to_offload].node_info.node_to_prefetch = node_to_offload
 
                 node_to_offload.node_info.offload_param_flag = True
-                self.peak_mem -= self.node_to_mem_saving_map[node_to_offload]
+                self.peak_mem -= node_to_mem_saving_map[node_to_offload]
+
+                assert self.node_to_node_map.get(node_to_offload, None) is None
+                assert self.node_to_mem_saving_map.get(node_to_offload, None) is None
+                self.node_to_node_map[node_to_offload] = node_to_node_map[node_to_offload]
+                self.node_to_mem_saving_map[node_to_offload] = node_to_mem_saving_map[node_to_offload]
 
             else:
                 self._repair_strategy()
@@ -209,8 +218,8 @@ class AsynGreedySolver:
             self._update_rumtime_mem_for_node()
             self._update_exec_stream_and_node_info()
 
-            # self.node_to_node_map.clear()
-            # self.node_to_mem_saving_map.clear()
+            node_to_node_map.clear()
+            node_to_mem_saving_map.clear()
 
 
     def _repair_strategy(self):
