@@ -356,6 +356,8 @@ class AsynGreedySolver:
                 node.node_info.runtime_fwd_mem = runtime_mem
 
             cur_peak_mem = max(runtime_mem, cur_peak_mem)
+            if cur_peak_mem > self.peak_mem and self.peak_mem > 0:
+                print("cur peak mem too high in forward", node, host_node_for_prefetch, node_to_offload)
             if node.node_info.offload_param_flag or (node == node_to_offload):
                 runtime_mem -= node.node_info.param_size
 
@@ -365,7 +367,7 @@ class AsynGreedySolver:
             runtime_mem -= calculate_fwd_out(node)
 
             if cur_peak_mem > self.peak_mem and self.peak_mem > 0:
-                print("cur peak mem too high", node, host_node_for_prefetch, node_to_offload)
+                print("cur peak mem too high in backward", node, host_node_for_prefetch, node_to_offload)
             # param prefetch
             node_to_prefetch = node.node_info.node_to_prefetch
             if node == host_node_for_prefetch:
