@@ -375,13 +375,17 @@ class AsynGreedySolver:
             node_to_prefetch = node.node_info.node_to_prefetch
             if node == host_node_for_prefetch:
                 node_to_prefetch = node_to_offload
+            if node_to_prefetch is not None:
+                # TODO 如果 prefetch stream 被阻塞，内存是否有可能也被延迟分配
+                runtime_mem += node_to_prefetch.node_info.param_size
             if node.node_info.syn_upload_flag:
                 # synchronous upload parameter
                 assert node.node_info.offload_param_flag
                 node_to_prefetch = node
-            if node_to_prefetch is not None:
-                # TODO 如果 prefetch stream 被阻塞，内存是否有可能也被延迟分配
                 runtime_mem += node_to_prefetch.node_info.param_size
+            # if node_to_prefetch is not None:
+            #     # TODO 如果 prefetch stream 被阻塞，内存是否有可能也被延迟分配
+            #     runtime_mem += node_to_prefetch.node_info.param_size
 
             runtime_mem = runtime_mem + node.meta['bwd_mem_tmp'] + node.meta['bwd_mem_out']
             if node.node_info.has_param:
