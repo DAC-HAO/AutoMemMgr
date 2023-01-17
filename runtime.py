@@ -32,10 +32,9 @@ class PreForwardUpload(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output):
         # release
-        print(ctx.params_indices, grad_output.shape, grad_output.device)
+        # print(ctx.params_indices, grad_output.shape, grad_output.device)
         for param_idx in ctx.params_indices:
             fp16_param = ModelParameters.fp16_params[param_idx]
-            print(fp16_param.grad, fp16_param.device, fp16_param.data.device)
             free_storage(fp16_param.data)
         return grad_output, None
 
@@ -266,6 +265,6 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
                                                                args=(node, param_indices, syn_upload_flag, node_id))
                 replace_node_users(node, offload_apply_node)
     gm.graph.print_tabular()
-    print(len(ModelParameters.fp16_params), ModelParameters.param_idx)
+    # print(len(ModelParameters.fp16_params), ModelParameters.param_idx)
     return gm
 
