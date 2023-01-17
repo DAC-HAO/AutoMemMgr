@@ -243,7 +243,15 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
             param_indices = node.node_info.param_indices
             assert isinstance(param_indices, list)
 
-            last_inp_node = list(node._input_nodes.keys())[-1]
+            # last_inp_node = list(node._input_nodes.keys())[-1]
+
+            def _extract_last_input_node(cur_node):
+                for n in list(cur_node._input_nodes.keys()).__reversed__():
+                    if n.op == "get_attr":
+                        continue
+                    return n
+
+            last_inp_node = _extract_last_input_node(node)
 
             with mod_graph.inserting_after(last_inp_node):
                 upload_apply_node = mod_graph.create_node('call_function', convert_upload_to_action,
