@@ -1,6 +1,13 @@
 import time
 import torch
 
+
+print("torch rand time......................")
+start = time.time()
+t_rand = torch.rand((20*1024, 20*1024))
+print(time.time() - start)
+del t_rand
+
 print("convert pin memory time......................")
 a = torch.rand((20*1024, 20*1024))
 start = time.time()
