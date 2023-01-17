@@ -178,7 +178,7 @@ class AsynGreedySolver:
                         if following_node.node_info.node_to_prefetch is not None:
                             continue
                         tmp_peak_mem_saving, tmp_total_mem_saving = self._compute_mem_saving(following_node, node)
-
+                        print(node_idx, following_node, tmp_peak_mem_saving)
                         if tmp_peak_mem_saving <= 0:
                             continue
 
