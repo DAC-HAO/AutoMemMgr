@@ -227,7 +227,7 @@ class AsynGreedySolver:
 
         peak_mem_saving = 0
 
-        while peak_mem_saving > 0:
+        while peak_mem_saving <= 0:
 
             max_profit = (0,)
             cancel_offload_node = None
