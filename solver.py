@@ -180,7 +180,7 @@ class AsynGreedySolver:
                         tmp_peak_mem_saving, tmp_total_mem_saving = self._compute_mem_saving(following_node, node)
 
                         if tmp_peak_mem_saving <= 0:
-                            print(node_idx, following_node, tmp_peak_mem_saving)
+                            # print(node_idx, following_node, tmp_peak_mem_saving)
                             continue
 
                         extra_comm_cost = self._compute_extra_comm_cost(following_node, node)
