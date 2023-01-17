@@ -133,7 +133,7 @@ class BertLMModel(nn.Module):
                  checkpoint=False):
         super().__init__()
         self.checkpoint = checkpoint
-        self.model = BertLMHeadModel(BertConfig(n_embd=hidden_size, n_layer=num_layers,
+        self.model = BertLMHeadModel(BertConfig(n_embd=hidden_size, num_hidden_layers=num_layers,
                                                 n_head=num_attention_heads, max_position_embeddings=768,
                                                 vocab_size=vocab_size))
 
@@ -267,7 +267,7 @@ def get_bert_components():
     batchSize = 8
 
     def bert_model_builder(checkpoint=False):
-        model = BertLMModel(hidden_size=768, num_layers=1, num_attention_heads=12, vocab_size=vocab_size,
+        model = BertLMModel(hidden_size=768, num_layers=2, num_attention_heads=12, vocab_size=vocab_size,
                             checkpoint=checkpoint)
         return model
 
