@@ -263,11 +263,11 @@ def t5_data_gen(device="meta"):
 @non_distributed_component_funcs.register(name='bert')
 def get_bert_components():
     vocab_size = 30522
-    seq_len = 768
+    seq_len = 8
     batchSize = 8
 
     def bert_model_builder(checkpoint=False):
-        model = BertLMModel(hidden_size=768, num_layers=12, num_attention_heads=12, vocab_size=vocab_size,
+        model = BertLMModel(hidden_size=768, num_layers=6, num_attention_heads=12, vocab_size=vocab_size,
                             checkpoint=checkpoint)
         return model
 

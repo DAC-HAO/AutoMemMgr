@@ -198,7 +198,7 @@ class AsynGreedySolver:
 
             if node_to_node_map.get(node_to_offload, None) is not None:
 
-                print('node_to_offload', node_to_offload, node_to_node_map[node_to_offload])
+                # print('node_to_offload', node_to_offload, node_to_node_map[node_to_offload])
                 if node_to_node_map[node_to_offload] == node_to_offload:
                     node_to_offload.node_info.syn_upload_flag = True
                 else:
@@ -247,18 +247,11 @@ class AsynGreedySolver:
                 host_node.node_info.node_to_prefetch = None
 
                 tmp_peak_mem_saving, tmp_total_mem_saving = self._compute_mem_saving(node_to_offload, node_to_offload)
-                print("tmp_mem_saving", tmp_peak_mem_saving/1024**2, tmp_total_mem_saving/1024**2, node_to_offload)
-                # if tmp_peak_mem_saving <= 0:
-                #     # restore node info for the offload node
-                #     node_to_offload.node_info.offload_param_flag = True
-                #     host_node.node_info.node_to_prefetch = node_to_offload
-                #     continue
+                # print("tmp_mem_saving", tmp_peak_mem_saving/1024**2, tmp_total_mem_saving/1024**2, node_to_offload)
 
                 assert tmp_peak_mem_saving >= 0
 
                 extra_comm_cost = self._compute_extra_comm_cost(node_to_offload, node_to_offload)
-                # tmp_profit = self._compute_offload_profit(tmp_peak_mem_saving, extra_comm_cost)
-                print("pre compute profit", tmp_total_mem_saving/1024**2, extra_comm_cost)
                 tmp_profit = self._compute_offload_profit(tmp_total_mem_saving, extra_comm_cost)
                 if self._compare_profit(tmp_profit, max_profit):
                     cancel_offload_node = node_to_offload
@@ -277,21 +270,21 @@ class AsynGreedySolver:
             self.node_to_node_map[cancel_offload_node] = cancel_offload_node
             self.node_to_mem_saving_map[cancel_offload_node] += peak_mem_saving
 
-            print("aft each repair node map.......................")
-            for node_to_offload, host_node in self.node_to_node_map.items():
-                print(node_to_offload, host_node)
-            print("repair...peak_mem_saving", peak_mem_saving/1024**2, self.peak_mem / 1024 ** 2)
-            print("aft each repair offload plan.......................")
-            for node_tmp in self.graph.nodes:
-                print(node_tmp, node_tmp.node_info.offload_param_flag, node_tmp.node_info.node_to_prefetch)
+            # print("aft each repair node map.......................")
+            # for node_to_offload, host_node in self.node_to_node_map.items():
+            #     print(node_to_offload, host_node)
+            # print("repair...peak_mem_saving", peak_mem_saving/1024**2, self.peak_mem / 1024 ** 2)
+            # print("aft each repair offload plan.......................")
+            # for node_tmp in self.graph.nodes:
+            #     print(node_tmp, node_tmp.node_info.offload_param_flag, node_tmp.node_info.node_to_prefetch)
 
-        print("********************************************************")
-        print("aft final repair node map.......................")
-        for node_to_offload, host_node in self.node_to_node_map.items():
-            print(node_to_offload, host_node)
-        print("aft final repair offload plan.......................")
-        for node_tmp in self.graph.nodes:
-            print(node_tmp, node_tmp.node_info.offload_param_flag, node_tmp.node_info.node_to_prefetch)
+        # print("********************************************************")
+        # print("aft final repair node map.......................")
+        # for node_to_offload, host_node in self.node_to_node_map.items():
+        #     print(node_to_offload, host_node)
+        # print("aft final repair offload plan.......................")
+        # for node_tmp in self.graph.nodes:
+        #     print(node_tmp, node_tmp.node_info.offload_param_flag, node_tmp.node_info.node_to_prefetch)
 
 
     def _update_rumtime_mem_for_node(self):
