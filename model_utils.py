@@ -267,7 +267,7 @@ def get_bert_components():
     batchSize = 8
 
     def bert_model_builder(checkpoint=False):
-        model = BertLMModel(hidden_size=768, num_layers=6, num_attention_heads=12, vocab_size=vocab_size,
+        model = BertLMModel(hidden_size=768, num_layers=1, num_attention_heads=12, vocab_size=vocab_size,
                             checkpoint=checkpoint)
         return model
 
