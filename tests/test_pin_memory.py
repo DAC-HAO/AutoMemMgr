@@ -35,11 +35,9 @@ del d_e
 
 print("copy cpu pin_memory and half time......................")
 e = torch.rand((20*1024, 20*1024), dtype=torch.float)
-torch.cuda.synchronize()
 start = time.time()
 e_e = torch.empty((20*1024, 20*1024), dtype=torch.half, pin_memory=True)
 e_e.copy_(e)
-torch.cuda.synchronize()
 print(time.time() - start)
 del e
 del e_e
