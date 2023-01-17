@@ -280,7 +280,7 @@ class AsynGreedySolver:
             print("aft each repair node map.......................")
             for node_to_offload, host_node in self.node_to_node_map.items():
                 print(node_to_offload, host_node)
-            print("repair...peak_mem_saving", peak_mem_saving, self.peak_mem / 1024 ** 2)
+            print("repair...peak_mem_saving", peak_mem_saving/1024**2, self.peak_mem / 1024 ** 2)
             print("aft each repair offload plan.......................")
             for node_tmp in self.graph.nodes:
                 print(node_tmp, node_tmp.node_info.offload_param_flag, node_tmp.node_info.node_to_prefetch)
@@ -352,7 +352,7 @@ class AsynGreedySolver:
             # If the prefetch operation can be completely overlapped,
             # then will provide memory saving information to downstream
             return (float('inf'), mem_saving)
-        return (mem_saving/extra_cost, )
+        return (mem_saving/extra_cost, mem_saving)
 
     def _compare_profit(self, profit_a: tuple, profit_b: tuple):
         for val1, val2 in zip(profit_a, profit_b):
