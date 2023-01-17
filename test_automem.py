@@ -31,7 +31,7 @@ model = memory_optimization(model, data_args, 1024*1024*args.mem_size, args.is_s
 wrap_fn = lambda x: x.to("cuda") if isinstance(x, torch.Tensor) else x
 data_args = tree_map(wrap_fn, data_args)
 
-for n, buff in model.named_buffers():
+for n, buff in model.model.named_buffers():
     buff.data = buff.data.cuda()
 
 torch.cuda.synchronize()
