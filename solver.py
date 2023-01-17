@@ -270,14 +270,6 @@ class AsynGreedySolver:
                 node_to_offload.node_info.offload_param_flag = True
                 host_node.node_info.node_to_prefetch = node_to_offload
 
-            print("aft each repair node map.......................")
-            for node_to_offload, host_node in self.node_to_node_map.items():
-                print(node_to_offload, host_node)
-            print("repair...peak_mem_saving", peak_mem_saving, self.peak_mem/1024**2)
-            print("aft each repair offload plan.......................")
-            for node_tmp in self.graph.nodes:
-                print(node_tmp, node_tmp.node_info.offload_param_flag, node_tmp.node_info.node_to_prefetch)
-
             assert cancel_offload_node.node_info.syn_upload_flag == False
             cancel_offload_node.node_info.syn_upload_flag = True
             cancel_host_node.node_info.node_to_prefetch = None
@@ -285,9 +277,21 @@ class AsynGreedySolver:
             self.node_to_node_map[cancel_offload_node] = cancel_offload_node
             self.node_to_mem_saving_map[cancel_offload_node] += peak_mem_saving
 
-        print("aft final repair.......................")
+            print("aft each repair node map.......................")
+            for node_to_offload, host_node in self.node_to_node_map.items():
+                print(node_to_offload, host_node)
+            print("repair...peak_mem_saving", peak_mem_saving, self.peak_mem / 1024 ** 2)
+            print("aft each repair offload plan.......................")
+            for node_tmp in self.graph.nodes:
+                print(node_tmp, node_tmp.node_info.offload_param_flag, node_tmp.node_info.node_to_prefetch)
+
+        print("********************************************************")
+        print("aft final repair node map.......................")
         for node_to_offload, host_node in self.node_to_node_map.items():
             print(node_to_offload, host_node)
+        print("aft final repair offload plan.......................")
+        for node_tmp in self.graph.nodes:
+            print(node_tmp, node_tmp.node_info.offload_param_flag, node_tmp.node_info.node_to_prefetch)
 
 
     def _update_rumtime_mem_for_node(self):
