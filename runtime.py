@@ -32,7 +32,7 @@ class PreForwardUpload(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output):
         # release
-        print(ctx.params_indices, grad_output)
+        print(ctx.params_indices, grad_output.shape, grad_output.device)
         for param_idx in ctx.params_indices:
             fp16_param = ModelParameters.fp16_params[param_idx]
             free_storage(fp16_param.data)
