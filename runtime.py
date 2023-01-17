@@ -18,7 +18,7 @@ class PreForwardUpload(torch.autograd.Function):
 
     @staticmethod
     def forward(ctx, input_, params_indices):
-        # offload
+        # upload
         ctx.params_indices = params_indices
         for param_idx in params_indices:
             fp16_param = ModelParameters.fp16_params[param_idx]
@@ -32,6 +32,7 @@ class PreForwardUpload(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output):
         # release
+        print(ctx.params_indices)
         for param_idx in ctx.params_indices:
             fp16_param = ModelParameters.fp16_params[param_idx]
             free_storage(fp16_param.data)
