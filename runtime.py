@@ -151,6 +151,7 @@ class PostForwardOperation(torch.autograd.Function):
         ctx.prefetch_info = prefetch_info
 
         if offload_info is not None:
+            print("offload_info", offload_info)
             for param_idx in offload_info.params_indices:
                 free_storage(ModelParameters.fp16_params[param_idx].data)
         return input_
