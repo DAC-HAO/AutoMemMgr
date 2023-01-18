@@ -25,6 +25,7 @@ class PreForwardUpload(torch.autograd.Function):
             if fp16_param.data.device.type == "cpu":
                 fp16_param.data = fp16_param.data.to("cuda")
             else:
+                print("PreForwardUpload", fp16_param.data.shape)
                 alloc_storage(fp16_param.data)
                 fp16_param.data.copy_(ModelParameters.fp32_master_params[param_idx].data)
         return input_
@@ -119,6 +120,7 @@ class AftForwardOffloadAsyn(torch.autograd.Function):
         ctx.syn_upload_flag = syn_upload_flag
         ctx.node_id = node_id
         for param_idx in params_indices:
+            print("AftForwardOffloadAsyn", param_idx, ModelParameters.fp16_params[param_idx].data.shape)
             free_storage(ModelParameters.fp16_params[param_idx].data)
         return input_
 
