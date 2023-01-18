@@ -141,6 +141,37 @@ class AftForwardOffloadAsyn(torch.autograd.Function):
                 fp16_param.data.copy_(ModelParameters.fp32_master_params[param_idx].data)
         return grad_output, None, None, None
 
+
+class PostForwardOperation(torch.autograd.Function):
+
+    @staticmethod
+    def forward(ctx, input_, params_indices, syn_upload_flag, node_id):
+        # offload
+        ctx.params_indices = params_indices
+        ctx.syn_upload_flag = syn_upload_flag
+        ctx.node_id = node_id
+        for param_idx in params_indices:
+            free_storage(ModelParameters.fp16_params[param_idx].data)
+        return input_
+
+    @staticmethod
+    def backward(ctx, grad_output):
+
+        # wait parameter prefetch
+        prefetch_event = GlobalCudaInfo.param_event_map.get(ctx.node_id, None)
+        if prefetch_event is not None:
+            assert isinstance(prefetch_event, torch.cuda.Event)
+            prefetch_event.wait()
+            # torch.cuda.current_stream().wait_event(prefetch_event)
+        elif ctx.syn_upload_flag:
+            for param_idx in ctx.params_indices:
+                fp16_param = ModelParameters.fp16_params[param_idx]
+                alloc_storage(fp16_param.data)
+                fp16_param.data.copy_(ModelParameters.fp32_master_params[param_idx].data)
+        return grad_output, None, None, None
+
+
+
 def convert_upload_to_action(tensor, params_indices):
     '''
     Convert UploadSpec into runtime action, implement upload operation target tensor.
@@ -248,7 +279,8 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
             with mod_graph.inserting_after(last_inp_node):
                 upload_apply_node = mod_graph.create_node('call_function', convert_upload_to_action,
                                                           args=(last_inp_node, param_indices))
-            replace_node_users(last_inp_node, upload_apply_node)
+                last_inp_node.replace_all_uses_with(upload_apply_node)
+            # replace_node_users(last_inp_node, upload_apply_node)
 
             if node.node_info.offload_param_flag:
                 syn_upload_flag = node.node_info.syn_upload_flag
@@ -256,18 +288,20 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
                 with mod_graph.inserting_after(node):
                     offload_apply_node = mod_graph.create_node('call_function', convert_offload_to_action_asyn,
                                                                args=(node, param_indices, syn_upload_flag, node_id))
-                replace_node_users(node, offload_apply_node)
+                    node.replace_all_uses_with(offload_apply_node)
+                # replace_node_users(node, offload_apply_node)
 
-        # node_to_prefetch = node.node_info.node_to_prefetch
-        # if node_to_prefetch is not None:
-        #     param_indices = node_to_prefetch.node_info.param_indices
-        #     node_id = node_to_prefetch.node_info.node_id
-        #     assert isinstance(param_indices, list)
-        #     with mod_graph.inserting_after(node):
-        #         prefetch_apply_node = mod_graph.create_node('call_function', convert_prefetch_to_action,
-        #                                                     args=(node, param_indices, node_id))
-        #     print(node, node_to_prefetch, node.node_info.offload_param_flag, list(node.users.keys()))
-        #     replace_node_users(node, prefetch_apply_node)
+        node_to_prefetch = node.node_info.node_to_prefetch
+        if node_to_prefetch is not None:
+            param_indices = node_to_prefetch.node_info.param_indices
+            node_id = node_to_prefetch.node_info.node_id
+            assert isinstance(param_indices, list)
+            with mod_graph.inserting_after(node):
+                prefetch_apply_node = mod_graph.create_node('call_function', convert_prefetch_to_action,
+                                                            args=(node, param_indices, node_id))
+                node.replace_all_uses_with(prefetch_apply_node)
+            # print(node, node_to_prefetch, node.node_info.offload_param_flag, list(node.users.keys()))
+            # replace_node_users(node, prefetch_apply_node)
 
     gm.graph.print_tabular()
     # print(len(ModelParameters.fp16_params), ModelParameters.param_idx)
