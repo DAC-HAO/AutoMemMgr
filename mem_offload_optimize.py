@@ -66,5 +66,6 @@ def memory_optimization(model: torch.nn.Module,
         gm = runtime_asyn_offload_apply_pass(gm)
 
     gm.recompile()
+    print(gm.code)
     optimized_model = BasicOffloadModule(gm)
     return optimized_model
