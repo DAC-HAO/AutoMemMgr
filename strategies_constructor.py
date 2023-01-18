@@ -104,14 +104,13 @@ class OffloadStrategiesConstructor:
                         # fp32_master_params.append(self.amp_optimizer._fp32_master_param_groups[group_idx][param_idx])
                         # fp32_master_params.append(attr_itr.detach().clone().float())
 
-                        if isinstance(attr_itr, torch.nn.Parameter):
-                            node_info.param_indices.append(ModelParameters.param_idx)
-                            node_info.param_size += attr_itr.data.numel() * attr_itr.data.element_size()
-                            ModelParameters.fp16_params.append(attr_itr)
-                            ModelParameters.fp32_master_params.append(attr_itr.detach().clone().float())
-                            ModelParameters.param_idx += 1
-            # setattr(node, 'fp16_params', fp16_params)
-            # setattr(node, 'fp32_master_params', fp32_master_params)
+                        # if isinstance(attr_itr, torch.nn.Parameter):
+                        node_info.param_indices.append(ModelParameters.param_idx)
+                        node_info.param_size += attr_itr.data.numel() * attr_itr.data.element_size()
+                        ModelParameters.fp16_params.append(attr_itr)
+                        ModelParameters.fp32_master_params.append(attr_itr.detach().clone().float())
+                        ModelParameters.param_idx += 1
+
 
         node_id = 0
         for node in self.nodes:
