@@ -266,6 +266,7 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
             with mod_graph.inserting_after(node):
                 prefetch_apply_node = mod_graph.create_node('call_function', convert_prefetch_to_action,
                                                             args=(node, param_indices, node_id))
+            print(node, node_to_prefetch, node.node_info.offload_param_flag, list(node.users.keys()))
             replace_node_users(node, prefetch_apply_node)
 
     gm.graph.print_tabular()
