@@ -98,9 +98,9 @@ class NoLeafModule(nn.Module):
         self.weight2 = nn.Parameter(torch.randn(2048, 2048))
         self.proj2_2 = nn.Linear(2048, 1024)
 
-        # self.proj3 = nn.Linear(1024, 2048)
-        # self.weight3 = nn.Parameter(torch.randn(2048, 2048))
-        # self.proj3_2 = nn.Linear(2048, 1024)
+        self.proj3 = nn.Linear(1024, 2048)
+        self.weight3 = nn.Parameter(torch.randn(2048, 2048))
+        self.proj3_2 = nn.Linear(2048, 1024)
 
     def forward(self, x):
         x = self.proj1(x)
@@ -111,9 +111,9 @@ class NoLeafModule(nn.Module):
         x = F.linear(x, self.weight2)
         x = self.proj2_2(x)
 
-        # x = self.proj3(x)
-        # x = F.linear(x, self.weight3)
-        # x = self.proj3_2(x)
+        x = self.proj3(x)
+        x = F.linear(x, self.weight3)
+        x = self.proj3_2(x)
 
         return x
 
