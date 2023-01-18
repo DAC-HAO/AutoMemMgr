@@ -383,23 +383,23 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
         #     print(node, node_to_prefetch, node.node_info.offload_param_flag, list(node.users.keys()))
         #     replace_node_users(node, prefetch_apply_node)
 
-        offload_info = None
-        prefetch_info = None
-        if node.node_info.offload_param_flag:
-            offload_info = {}
-            offload_info['params_indices'] = node.node_info.param_indices
-            offload_info['node_id'] = node.node_info.node_id
-            offload_info['syn_upload_flag'] = node.node_info.syn_upload_flag
-        node_to_prefetch = node.node_info.node_to_prefetch
-        if node_to_prefetch is not None:
-            prefetch_info = {}
-            prefetch_info['params_indices'] = node_to_prefetch.node_info.param_indices
-            prefetch_info['node_id'] = node_to_prefetch.node_info.node_id
-        if (offload_info is not None) or (prefetch_info is not None):
-            with mod_graph.inserting_after(node):
-                insert_node = mod_graph.create_node('call_function', convert_offload_prefetch_to_action_asyn,
-                                                            args=(node, offload_info, prefetch_info))
-            replace_node_users(node, insert_node)
+        # offload_info = None
+        # prefetch_info = None
+        # if node.node_info.offload_param_flag:
+        #     offload_info = {}
+        #     offload_info['params_indices'] = node.node_info.param_indices
+        #     offload_info['node_id'] = node.node_info.node_id
+        #     offload_info['syn_upload_flag'] = node.node_info.syn_upload_flag
+        # node_to_prefetch = node.node_info.node_to_prefetch
+        # if node_to_prefetch is not None:
+        #     prefetch_info = {}
+        #     prefetch_info['params_indices'] = node_to_prefetch.node_info.param_indices
+        #     prefetch_info['node_id'] = node_to_prefetch.node_info.node_id
+        # if (offload_info is not None) or (prefetch_info is not None):
+        #     with mod_graph.inserting_after(node):
+        #         insert_node = mod_graph.create_node('call_function', convert_offload_prefetch_to_action_asyn,
+        #                                                     args=(node, offload_info, prefetch_info))
+        #     replace_node_users(node, insert_node)
 
 
     # gm.graph.print_tabular()
