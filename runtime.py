@@ -353,8 +353,8 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
 
             def _extract_last_input_node(cur_node):
                 for n in list(cur_node._input_nodes.keys()).__reversed__():
-                    if n.op == "get_attr":
-                        continue
+                    # if n.op == "get_attr":
+                    #     continue
                     return n
 
             last_inp_node = _extract_last_input_node(node)
