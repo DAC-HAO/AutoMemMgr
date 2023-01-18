@@ -21,11 +21,12 @@ class PreForwardUpload(torch.autograd.Function):
         # upload
         ctx.params_indices = params_indices
         for param_idx in params_indices:
+            print("PreForwardUpload", param_idx, ModelParameters.fp16_params[param_idx].data.shape)
             fp16_param = ModelParameters.fp16_params[param_idx]
             if fp16_param.data.device.type == "cpu":
                 fp16_param.data = fp16_param.data.to("cuda")
             else:
-                print("PreForwardUpload", fp16_param.data.shape)
+                # print("PreForwardUpload", fp16_param.data.shape)
                 alloc_storage(fp16_param.data)
                 fp16_param.data.copy_(ModelParameters.fp32_master_params[param_idx].data)
         return input_
