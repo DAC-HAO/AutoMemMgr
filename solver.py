@@ -175,6 +175,8 @@ class AsynGreedySolver:
                     # TODO 当前并未保证 prefetch 遵循 backward 的顺序执行
                     # search when to prefetch the node offloaded
                     for following_node in self.nodes[node_idx:]:
+                        if following_node.op == "get_attr":
+                            continue
                         if following_node.node_info.node_to_prefetch is not None:
                             continue
                         tmp_peak_mem_saving, tmp_total_mem_saving = self._compute_mem_saving(following_node, node)
