@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import List
 import torch
 from torch.fx.node import Node
 from colossalai.gemini.tensor_utils import alloc_storage, free_storage
@@ -238,8 +239,10 @@ def convert_offload_prefetch_to_action_asyn(tensor, offload_info=None, prefetch_
     return PostForwardOperation.apply(tensor, offload_info, prefetch_info)
 
 
-def replace_node_users(orig_node: Node, inserted_node: Node):
+def replace_node_users(orig_node: Node, inserted_node: Node, rep_user_nodes: List[Node] = None):
     user_list = list(orig_node.users.keys())
+    if rep_user_nodes is not None:
+        user_list = rep_user_nodes
     for user in user_list:
         if user == inserted_node:
             continue
@@ -359,7 +362,7 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
             with mod_graph.inserting_after(last_inp_node):
                 upload_apply_node = mod_graph.create_node('call_function', convert_upload_to_action,
                                                           args=(last_inp_node, param_indices))
-            replace_node_users(last_inp_node, upload_apply_node)
+            replace_node_users(last_inp_node, upload_apply_node, [node])
 
         #     if node.node_info.offload_param_flag:
         #         syn_upload_flag = node.node_info.syn_upload_flag
