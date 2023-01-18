@@ -151,8 +151,7 @@ class PostForwardOperation(torch.autograd.Function):
         ctx.prefetch_info = prefetch_info
 
         if offload_info is not None:
-            print("offload_info", offload_info)
-            for param_idx in offload_info.params_indices:
+            for param_idx in offload_info['params_indices']:
                 free_storage(ModelParameters.fp16_params[param_idx].data)
         return input_
 
@@ -161,13 +160,13 @@ class PostForwardOperation(torch.autograd.Function):
 
         # wait current parameter prefetch
         if ctx.offload_info is not None:
-            prefetch_event = GlobalCudaInfo.prefetch_event_map.get(ctx.offload_info.node_id, None)
+            prefetch_event = GlobalCudaInfo.prefetch_event_map.get(ctx.offload_info['node_id'], None)
             if prefetch_event is not None:
                 assert isinstance(prefetch_event, torch.cuda.Event)
                 prefetch_event.wait()
                 # torch.cuda.current_stream().wait_event(prefetch_event)
-            elif ctx.offload_info.syn_upload_flag:
-                for param_idx in ctx.offload_info.params_indices:
+            elif ctx.offload_info['syn_upload_flag']:
+                for param_idx in ctx.offload_info['params_indices']:
                     fp16_param = ModelParameters.fp16_params[param_idx]
                     alloc_storage(fp16_param.data)
                     fp16_param.data.copy_(ModelParameters.fp32_master_params[param_idx].data)
@@ -175,7 +174,7 @@ class PostForwardOperation(torch.autograd.Function):
         # prefetch following node parameter
         if ctx.prefetch_info is not None:
             # prefetch
-            params_indices = ctx.prefetch_info.params_indices
+            params_indices = ctx.prefetch_info['params_indices']
             with torch.cuda.stream(GlobalCudaInfo.h2d_stream):
                 for param_idx in params_indices:
                     fp16_param = ModelParameters.fp16_params[param_idx]
@@ -185,7 +184,7 @@ class PostForwardOperation(torch.autograd.Function):
             # insert event to record H2D stream
             prefetch_event = torch.cuda.Event()
             prefetch_event.record(GlobalCudaInfo.h2d_stream)
-            GlobalCudaInfo.prefetch_event_map[ctx.prefetch_info.node_id] = prefetch_event
+            GlobalCudaInfo.prefetch_event_map[ctx.prefetch_info['node_id']] = prefetch_event
 
         return grad_output, None, None
 
