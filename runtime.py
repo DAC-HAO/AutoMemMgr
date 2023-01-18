@@ -258,16 +258,16 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
                                                                args=(node, param_indices, syn_upload_flag, node_id))
                 replace_node_users(node, offload_apply_node)
 
-        node_to_prefetch = node.node_info.node_to_prefetch
-        if node_to_prefetch is not None:
-            param_indices = node_to_prefetch.node_info.param_indices
-            node_id = node_to_prefetch.node_info.node_id
-            assert isinstance(param_indices, list)
-            with mod_graph.inserting_after(node):
-                prefetch_apply_node = mod_graph.create_node('call_function', convert_prefetch_to_action,
-                                                            args=(node, param_indices, node_id))
-            print(node, node_to_prefetch, node.node_info.offload_param_flag, list(node.users.keys()))
-            replace_node_users(node, prefetch_apply_node)
+        # node_to_prefetch = node.node_info.node_to_prefetch
+        # if node_to_prefetch is not None:
+        #     param_indices = node_to_prefetch.node_info.param_indices
+        #     node_id = node_to_prefetch.node_info.node_id
+        #     assert isinstance(param_indices, list)
+        #     with mod_graph.inserting_after(node):
+        #         prefetch_apply_node = mod_graph.create_node('call_function', convert_prefetch_to_action,
+        #                                                     args=(node, param_indices, node_id))
+        #     print(node, node_to_prefetch, node.node_info.offload_param_flag, list(node.users.keys()))
+        #     replace_node_users(node, prefetch_apply_node)
 
     gm.graph.print_tabular()
     # print(len(ModelParameters.fp16_params), ModelParameters.param_idx)
