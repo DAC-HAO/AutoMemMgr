@@ -231,15 +231,15 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
     nodes = tuple(mod_graph.nodes)
     for node in nodes:
 
-        node_to_prefetch = node.node_info.node_to_prefetch
-        if node_to_prefetch is not None:
-            param_indices = node_to_prefetch.node_info.param_indices
-            node_id = node_to_prefetch.node_info.node_id
-            assert isinstance(param_indices, list)
-            with mod_graph.inserting_after(node):
-                prefetch_apply_node = mod_graph.create_node('call_function', convert_prefetch_to_action,
-                                                          args=(node, param_indices, node_id))
-            replace_node_users(node, prefetch_apply_node)
+        # node_to_prefetch = node.node_info.node_to_prefetch
+        # if node_to_prefetch is not None:
+        #     param_indices = node_to_prefetch.node_info.param_indices
+        #     node_id = node_to_prefetch.node_info.node_id
+        #     assert isinstance(param_indices, list)
+        #     with mod_graph.inserting_after(node):
+        #         prefetch_apply_node = mod_graph.create_node('call_function', convert_prefetch_to_action,
+        #                                                   args=(node, param_indices, node_id))
+        #     replace_node_users(node, prefetch_apply_node)
 
         if node.node_info.has_param:
             param_indices = node.node_info.param_indices
