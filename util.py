@@ -13,7 +13,7 @@ class ModelParameters:
 
 class GlobalCudaInfo:
     h2d_stream = torch.cuda.Stream()
-    param_event_map = {}
+    prefetch_event_map = {}
 
 @dataclass
 class NodeInfo:
