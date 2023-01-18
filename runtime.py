@@ -279,7 +279,7 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
             with mod_graph.inserting_after(last_inp_node):
                 upload_apply_node = mod_graph.create_node('call_function', convert_upload_to_action,
                                                           args=(last_inp_node, param_indices))
-                last_inp_node.replace_all_uses_with(upload_apply_node)
+            last_inp_node.replace_all_uses_with(upload_apply_node)
             # replace_node_users(last_inp_node, upload_apply_node)
 
             if node.node_info.offload_param_flag:
@@ -288,7 +288,7 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
                 with mod_graph.inserting_after(node):
                     offload_apply_node = mod_graph.create_node('call_function', convert_offload_to_action_asyn,
                                                                args=(node, param_indices, syn_upload_flag, node_id))
-                    node.replace_all_uses_with(offload_apply_node)
+                node.replace_all_uses_with(offload_apply_node)
                 # replace_node_users(node, offload_apply_node)
 
         node_to_prefetch = node.node_info.node_to_prefetch
@@ -299,7 +299,7 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
             with mod_graph.inserting_after(node):
                 prefetch_apply_node = mod_graph.create_node('call_function', convert_prefetch_to_action,
                                                             args=(node, param_indices, node_id))
-                node.replace_all_uses_with(prefetch_apply_node)
+            node.replace_all_uses_with(prefetch_apply_node)
             # print(node, node_to_prefetch, node.node_info.offload_param_flag, list(node.users.keys()))
             # replace_node_users(node, prefetch_apply_node)
 
