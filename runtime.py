@@ -345,7 +345,7 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
     """
     mod_graph = gm.graph
     nodes = tuple(mod_graph.nodes)
-    inserted_node_list = []
+    no_insert_node_list = []
     for node in nodes:
 
         if node.node_info.has_param:
@@ -356,7 +356,7 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
 
             def _extract_last_input_node(cur_node):
                 for n in list(cur_node._input_nodes.keys()).__reversed__():
-                    if (n.op == "get_attr") or (n in inserted_node_list):
+                    if (n.op == "get_attr") or (n in no_insert_node_list):
                         continue
                     return n
 
@@ -366,7 +366,6 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
                 upload_apply_node = mod_graph.create_node('call_function', convert_upload_to_action,
                                                           args=(last_inp_node, param_indices))
             replace_node_users(last_inp_node, upload_apply_node, [node])
-            inserted_node_list.append(upload_apply_node)
 
         #     if node.node_info.offload_param_flag:
         #         syn_upload_flag = node.node_info.syn_upload_flag
@@ -404,7 +403,8 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
                 new_node = mod_graph.create_node('call_function', convert_offload_prefetch_to_action_asyn,
                                                             args=(node, offload_info, prefetch_info))
             replace_node_users(node, new_node)
-            inserted_node_list.append(new_node)
+            if node.op == "get_attr" or node in no_insert_node_list:
+                no_insert_node_list.append(new_node)
 
     gm.graph.print_tabular()
     # print(len(ModelParameters.fp16_params), ModelParameters.param_idx)
