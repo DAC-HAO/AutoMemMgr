@@ -402,6 +402,6 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
             replace_node_users(node, insert_node)
 
 
-    # gm.graph.print_tabular()
+    gm.graph.print_tabular()
     # print(len(ModelParameters.fp16_params), ModelParameters.param_idx)
     return gm
