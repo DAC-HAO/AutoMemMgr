@@ -31,6 +31,7 @@ class PreForwardUpload(torch.autograd.Function):
                 # print("PreForwardUpload", fp16_param.data.shape)
                 alloc_storage(fp16_param.data)
                 fp16_param.data.copy_(ModelParameters.fp32_master_params[param_idx].data)
+            print(input_.shape, input_.device, fp16_param.data.device)
         return input_
 
     @staticmethod
