@@ -50,10 +50,16 @@ class OffloadStrategiesConstructor:
 
             elif node.op == "call_function":
                 label = True
-                for inp_node in list(node._input_nodes.keys()):
-                    if inp_node.op == "get_attr":
+                input_nodes = list(node._input_nodes.keys())
+                for inp_node in input_nodes:
+                    if (inp_node.op == "get_attr") or (inp_node in no_offload_param_list):
                         label = False
                         break
+
+                if len(input_nodes) == 1:
+                    unique_inp_node = input_nodes[0]
+                    if (unique_inp_node.op == "get_attr") or (unique_inp_node in no_offload_param_list):
+                        label = False
 
             return label
 
@@ -113,8 +119,27 @@ class OffloadStrategiesConstructor:
                             ModelParameters.fp32_master_params.append(attr_itr.detach().clone().float())
                             ModelParameters.param_idx += 1
 
-                if len(input_nodes) == 1 and ((input_nodes[0].op == "get_attr") or (input_nodes[0] in no_offload_param_list)):
-                    pass
+                if len(input_nodes) == 1:
+                    unique_inp_node = input_nodes[0]
+                    if unique_inp_node.op == "get_attr":
+                        no_offload_param_list.append(node)
+                    elif unique_inp_node in no_offload_param_list:
+                        assert len(node_info.param_indices) == 0
+                        assert node_info.param_size == 0
+                        node_info.param_indices = unique_inp_node.node_info.param_indices.copy()
+                        node_info.param_size += unique_inp_node.node_info.param_size
+                        unique_inp_node.node_info.param_indices.clear()
+                        unique_inp_node.node_info.param_size = 0
+                        no_offload_param_list.remove(unique_inp_node)
+                        no_offload_param_list.append(node)
+                else:
+                    for inp_node in input_nodes:
+                        if inp_node in no_offload_param_list:
+                            assert len(inp_node.node_info.param_indices) > 0
+                            assert inp_node.node_info.param_size > 0
+                            node_info.param_indices.extend(inp_node.node_info.param_indices)
+                            node_info.param_size += inp_node.node_info.param_size
+                            no_offload_param_list.remove(inp_node)
 
         node_id = 0
         no_offload_param_list = []
