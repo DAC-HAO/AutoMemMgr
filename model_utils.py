@@ -301,7 +301,7 @@ def get_bert_components():
 def get_gpt2_components():
     vocab_size = 50257
     seq_len = 8
-    batchSize = 8
+    batchSize = 1
 
     def gpt2_model_builder(checkpoint=False):
         model = GPTLMModel(hidden_size=1024, num_layers=1, num_attention_heads=16, vocab_size=vocab_size,
