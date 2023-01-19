@@ -93,7 +93,8 @@ class OffloadStrategiesConstructor:
                     ModelParameters.param_idx += 1
 
             elif node.op == 'call_function':
-                for inp_node in list(node._input_nodes.keys()):
+                input_nodes = list(node._input_nodes.keys())
+                for inp_node in input_nodes:
                     if inp_node.op == "get_attr":
                         attr_itr = self.root_module
                         atoms = inp_node.target.split(".")
@@ -112,8 +113,11 @@ class OffloadStrategiesConstructor:
                             ModelParameters.fp32_master_params.append(attr_itr.detach().clone().float())
                             ModelParameters.param_idx += 1
 
+                if len(input_nodes) == 1 and ((input_nodes[0].op == "get_attr") or (input_nodes[0] in no_offload_param_list)):
+                    pass
 
         node_id = 0
+        no_offload_param_list = []
         for node in self.nodes:
             node_id += 1
             setattr(node, "node_info", NodeInfo(node_id=node_id))
