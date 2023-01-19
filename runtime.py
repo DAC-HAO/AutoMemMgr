@@ -363,6 +363,7 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
             last_inp_node = _extract_last_input_node(node)
             if last_inp_node is None:
                 print("last_inp_node", node, node.op, list(node._input_nodes.keys()))
+                mod_graph.print_tabular()
 
             with mod_graph.inserting_after(last_inp_node):
                 upload_apply_node = mod_graph.create_node('call_function', convert_upload_to_action,
