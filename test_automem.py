@@ -22,7 +22,7 @@ args = parser.parse_args()
 # build model
 get_components_func = non_distributed_component_funcs.get_callable(args.m_name)
 model_builder, data_gen = get_components_func()
-data_args = data_gen(device="meta")
+data_args = data_gen(device="cpu")
 model = model_builder()
 
 param_size = parameter_size(model)/1024**2
