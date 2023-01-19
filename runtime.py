@@ -356,9 +356,14 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
 
             def _extract_last_input_node(cur_node):
                 for n in list(cur_node._input_nodes.keys()).__reversed__():
-                    if (n.op == "get_attr"):
+                    if (n.op == "get_attr") or (n in no_insert_after_node_list):
                         continue
                     return n
+                cur_user_nodes = list(cur_node.users.keys())
+                assert cur_user_nodes == 1
+                no_insert_after_node_list.append(cur_node)
+                return _extract_last_input_node(cur_user_nodes[0])
+
 
             last_inp_node = _extract_last_input_node(node)
             if last_inp_node is None:
@@ -406,8 +411,8 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
                 new_node = mod_graph.create_node('call_function', convert_offload_prefetch_to_action_asyn,
                                                             args=(node, offload_info, prefetch_info))
             replace_node_users(node, new_node)
-            # if (node.op == "get_attr") or (node in no_insert_after_node_list):
-            #     no_insert_after_node_list.append(new_node)
+            if (node.op == "get_attr") or (node in no_insert_after_node_list):
+                no_insert_after_node_list.append(new_node)
 
     gm.graph.print_tabular()
     # print(len(ModelParameters.fp16_params), ModelParameters.param_idx)
