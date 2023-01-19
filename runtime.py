@@ -356,16 +356,13 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
 
             def _extract_last_input_node(cur_node):
                 for n in list(cur_node._input_nodes.keys()).__reversed__():
-                    if n.name == "convert_offload_prefetch_to_action_asyn_34":
-                        print("******", n, n in no_insert_after_node_list)
                     if (n.op == "get_attr") or (n in no_insert_after_node_list):
                         continue
                     return n
 
             last_inp_node = _extract_last_input_node(node)
-
-            if node.name == "add_27":
-                print("add_27", last_inp_node, last_inp_node.op, last_inp_node._input_nodes)
+            if last_inp_node is None:
+                print("last_inp_node", node, node.op, list(node._input_nodes.keys()))
 
             with mod_graph.inserting_after(last_inp_node):
                 upload_apply_node = mod_graph.create_node('call_function', convert_upload_to_action,
@@ -408,8 +405,6 @@ def runtime_asyn_offload_apply_pass(gm: torch.fx.GraphModule):
                 new_node = mod_graph.create_node('call_function', convert_offload_prefetch_to_action_asyn,
                                                             args=(node, offload_info, prefetch_info))
             replace_node_users(node, new_node)
-            if node.name == "model_bert_encoder_layer_1_output_dense_bias":
-                print("********", node.op, node)
             if (node.op == "get_attr") or (node in no_insert_after_node_list):
                 no_insert_after_node_list.append(new_node)
 
