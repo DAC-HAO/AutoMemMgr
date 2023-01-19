@@ -130,6 +130,7 @@ class OffloadStrategiesConstructor:
                         node_info.param_size += unique_inp_node.node_info.param_size
                         unique_inp_node.node_info.param_indices.clear()
                         unique_inp_node.node_info.param_size = 0
+                        unique_inp_node.node_info.has_param = False
                         no_offload_param_list.remove(unique_inp_node)
                         no_offload_param_list.append(node)
                 else:
@@ -139,6 +140,9 @@ class OffloadStrategiesConstructor:
                             assert inp_node.node_info.param_size > 0
                             node_info.param_indices.extend(inp_node.node_info.param_indices)
                             node_info.param_size += inp_node.node_info.param_size
+                            inp_node.node_info.param_indices.clear()
+                            inp_node.node_info.param_size = 0
+                            inp_node.node_info.has_param = False
                             no_offload_param_list.remove(inp_node)
 
         node_id = 0
